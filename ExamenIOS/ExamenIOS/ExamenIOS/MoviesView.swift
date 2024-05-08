@@ -25,7 +25,7 @@ struct MoviesView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    NavigationLink(destination: ProfileView()) {
+                    NavigationLink(destination: PerfilView()) {
                         ProfileIcon()
                     }
                 }
@@ -108,11 +108,6 @@ struct ProfileIcon: View {
     }
 }
 
-struct ProfileView: View {
-    var body: some View {
-        Text("Profile Details")
-    }
-}
 
 struct MoviesView_Previews: PreviewProvider {
     static var previews: some View {
