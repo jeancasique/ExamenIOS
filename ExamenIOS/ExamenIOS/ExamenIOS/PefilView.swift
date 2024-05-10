@@ -6,6 +6,7 @@ import FirebaseStorage
 import GoogleSignIn
 import LocalAuthentication
 import AuthenticationServices
+
 // Clase para gestionar los datos del usuario utilizando el patrón ObservableObject
 class UserData: ObservableObject {
     @Published var email: String = ""
@@ -21,23 +22,25 @@ class UserData: ObservableObject {
 struct PerfilView: View {
     @StateObject private var userData = UserData() // Datos del usuario como objeto de estado
     @State private var editingField: String?       // Campo actualmente en edición
-    @State private var showImagePicker = false     // Controla la visibilidad del selector de imagen
+    @State private var showActionSheet = false     // Controla la visibilidad del selector de imagen
+    @State private var showImagePicker = false
     @State private var showAlert = false           // Controla la visibilidad de la alerta
     @State private var alertMessage = ""           // Mensaje para la alerta
     @State private var sourceType: UIImagePickerController.SourceType?
+    @State private var showDocumentPicker = false
     
     var body: some View {
         NavigationView {
             ScrollView {
                 ZStack (alignment: .top) {
-                  
+                    
                     Rectangle()
-                                            .fill(Color.blue)
-                                                .frame(height: UIScreen.main.bounds.height * 0.2) // Ajusta este valor para controlar la altura del color melón
-                                                .edgesIgnoringSafeArea(.top) // Solo extiende el color melón hasta el área segura superior
-
+                        .fill(Color.black)
+                        .frame(height: UIScreen.main.bounds.height * 0.2) // Ajusta este valor para controlar la altura del color
+                        .edgesIgnoringSafeArea(.top) // Solo extiende el color melón hasta el área segura superior
+                    
                     VStack(alignment: .center, spacing: 20) {
-                        // Muestra el primer nombre del usuario, con estilo de título y negrita
+                        
                         Text(userData.firstName)
                             .font(.title) // Establece el tamaño de la fuente como título
                             .fontWeight(.bold) // Hace que la fuente sea negrita
@@ -46,12 +49,14 @@ struct PerfilView: View {
                         // Llama a la sección que muestra y maneja la imagen de perfil
                         profileImageSection
                             .padding(.top, 20)
+                        
+                        
                         // Contenedor horizontal para el correo electrónico
-                        HStack {
-                            Text("Email:")
-                            
+                        VStack(alignment: .leading) {
+                            Text("Email")
                                 .padding(.vertical, 8) // Añade padding vertical para el alineamiento con otros elementos
-                                .font(.body) // Establece el tamaño de la fuente como cuerpo de texto
+                                .font(.body)
+                                .fontWeight(.bold)// Establece el tamaño de la fuente como cuerpo de texto
                                 .foregroundColor(.primary) // Establece el color del texto al color primario
                             
                             Spacer(minLength: 8) // Inserta un espacio mínimo de 8 dp entre el label y el contenido
@@ -63,12 +68,13 @@ struct PerfilView: View {
                                 .padding(.trailing, 8) // Añade padding al final del texto para mantener el diseño dentro de los límites
                         }
                         .padding(.vertical, 8) // Añade relleno vertical al contenedor HStack
-                        
-                        userInfoField(label: "Nombre:", value: $userData.firstName, editing: $editingField, fieldKey: "firstName", editable: true)
-                        userInfoField(label: "Apellidos:", value: $userData.lastName, editing: $editingField, fieldKey: "lastName", editable: true)
-                        datePickerField(label: "Fecha de Nacimiento:", date: $userData.birthDate, editing: $editingField, fieldKey: "birthDate")
-                        userInfoField(label: "Género:", value: $userData.gender, editing: $editingField, fieldKey: "gender", editable: true)
-                        
+                        VStack(alignment: .leading) {
+                            userInfoField(label: "Nombre", value: $userData.firstName, editing: $editingField, fieldKey: "firstName", editable: true)
+                            userInfoField(label: "Apellidos", value: $userData.lastName, editing: $editingField, fieldKey: "lastName", editable: true)
+                            datePickerField(label: "Fecha de Nacimiento:", date: $userData.birthDate, editing: $editingField, fieldKey: "birthDate")
+                            userInfoField(label: "Género", value: $userData.gender, editing: $editingField, fieldKey: "gender", editable: true)
+                            
+                        }
                         // Botón para guardar los cambios realizados en el perfil del usuario
                         Button("Guardar Cambios", action: saveData) // Define el botón y su acción
                             .padding() // Añade relleno alrededor del botón
@@ -98,72 +104,83 @@ struct PerfilView: View {
     
     // Sección que muestra y gestiona la imagen de perfil
     var profileImageSection: some View {
-           ZStack {
-               Circle()
-                   .fill(Color.gray.opacity(0.5))
-                   .frame(width: 140, height: 140)
-                   .shadow(radius: 10)
-               
-               if let image = userData.profileImage {
-                   Image(uiImage: image)
-                       .resizable()
-                       .scaledToFill()
-                       .clipShape(Circle())
-                       .frame(width: 130, height: 130)
-               } else {
-                   Image(systemName: "person.circle.fill")
-                       .resizable()
-                       .scaledToFit()
-                       .frame(width: 130, height: 130)
-                       .clipShape(Circle())
-                       .foregroundColor(.white)
-               }
-           }
-           .onTapGesture {
-               self.showImagePicker = true // Activa el selector de imágenes al tocar
-               self.sourceType = nil // Resetea la fuente de la imagen
-           }
-           .contextMenu {
-               Button(action: {
-                   self.showImagePicker = true
-                   self.sourceType = .photoLibrary
-               }) {
-                   Text("Abrir Galería")
-                   Image(systemName: "photo.on.rectangle")
-               }
-               Button(action: {
-                   self.showImagePicker = true
-                   self.sourceType = .camera
-               }) {
-                   Text("Tomar Foto")
-                   Image(systemName: "camera")
-               }
-           }
-           .padding(.bottom, 20)
-       }
-    
-    
+        ZStack {
+            Circle()
+                .fill(Color.white.opacity(0.9))
+                .frame(width: 140, height: 140)
+                .shadow(radius: 10)
+            
+            if let image = userData.profileImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .clipShape(Circle())
+                    .frame(width: 130, height: 130)
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 130, height: 130)
+                    .clipShape(Circle())
+                    .foregroundColor(.white)
+            }
+        }
+        .onTapGesture {
+            self.showActionSheet = true
+        }
+        .actionSheet(isPresented: $showActionSheet) {
+            ActionSheet(title: Text("Selecciona una opción"), buttons: [
+                .default(Text("Abrir Galería")) {
+                    self.showImagePicker = true
+                    self.sourceType = .photoLibrary
+                },
+                .default(Text("Tomar Foto")) {
+                    self.showImagePicker = true
+                    self.sourceType = .camera
+                },
+                .default(Text("Seleccionar Archivo")) {
+                    self.showDocumentPicker = true
+                },
+                .cancel()
+            ])
+        }
+        .sheet(isPresented: $showImagePicker) {
+            ImagePicker(image: $userData.profileImage, sourceType: sourceType!)
+        }
+        .sheet(isPresented: $showDocumentPicker) {
+            DocumentPicker(image: $userData.profileImage)
+        }
+        
+    }
+
     // Función para generar campos de usuario editables
     func userInfoField(label: String, value: Binding<String>, editing: Binding<String?>, fieldKey: String, editable: Bool) -> some View {
-        HStack {
+        VStack(alignment: .leading) {
             Text(label)
-         
-            if editing.wrappedValue == fieldKey {
-                TextField("", text: value) // Usando el texto vacío para el placeholder
-                
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                
-                Button(action: { editing.wrappedValue = nil }) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                }
-            } else {
-                Text(value.wrappedValue)
-                    .frame(maxWidth: .infinity, alignment: .leading) // Asegura que el texto se alinee a la izquierda
-                if editable {
-                    Button(action: { editing.wrappedValue = fieldKey }) {
-                        Image(systemName: "pencil.circle.fill")
-                            .foregroundColor(.blue)
+                .fontWeight(.bold)
+
+            HStack {
+                if editing.wrappedValue == fieldKey {
+                    TextField("", text: value) // Usando el texto vacío para el placeholder
+                        
+                        .background(.blue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .cornerRadius(5)
+                    
+                    Button(action: { editing.wrappedValue = nil }) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                    }
+                } else {
+                    Text(value.wrappedValue)
+                        .frame(maxWidth: .infinity, alignment: .leading) // Asegura que el texto se alinee a la izquierda
+
+                    if editable {
+                        Button(action: { editing.wrappedValue = fieldKey }) {
+                            Image(systemName: "pencil.circle.fill")
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
                     }
                 }
             }
@@ -173,8 +190,10 @@ struct PerfilView: View {
 
            // Función para generar un selector de fechas con consistencia en el diseño
     func datePickerField(label: String, date: Binding<Date>, editing: Binding<String?>, fieldKey: String) -> some View {
+        
             HStack {
                 Text(label)
+                    .fontWeight(.bold)
                 
                 if editing.wrappedValue == fieldKey {
                     DatePicker("", selection: date, displayedComponents: [.date])
@@ -221,7 +240,6 @@ struct PerfilView: View {
             "gender": self.userData.gender,
             "profileImageURL": self.userData.profileImageURL
             
-            // Actualiza la URL de la imagen de perfil
         ]
         
         // Guarda los datos del usuario en Firestore

@@ -1,56 +1,103 @@
 import SwiftUI
-
+import CoreData
 
 struct DescriptionMovie: View {
     var movie: Movie
+    @State private var isFavorite: Bool = false // Estado inicial no favorito
+    @Environment(\.managedObjectContext) var managedObjectContext
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Imagen de portada
-                AsyncImage(url: URL(string: movie.poster)) { phase in
-                    if let image = phase.image {
-                        image.resizable()
-                             .aspectRatio(contentMode: .fit)
-                             .cornerRadius(12)
-                    } else if phase.error != nil {
-                        Text("There was an error loading the image.")
+            VStack(alignment: .leading, spacing: 10) {
+                ZStack(alignment: .bottom) {
+                    AsyncImage(url: URL(string: movie.poster)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .clipped()
+                        case .failure:
+                            Image("spider") // Imagen predeterminada en caso de error
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .clipped()
+                        case .empty:
+                            Image("spider") // Imagen predeterminada mientras carga la imagen
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .clipped()
+                        @unknown default:
+                            ProgressView()
+                        }
+                    }
+                    .edgesIgnoringSafeArea(.top)
+
+                    // Gradiente que se difumina hacia el final de la imagen
+                    LinearGradient(gradient: Gradient(colors: [.clear, .black]), startPoint: .center, endPoint: .bottom)
+                }
+                .background(Color.black.opacity(0.1))
+
+                // HStack para el título y el botón de favoritos
+                HStack {
+                    Text(movie.title)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16) // Padding izquierdo de 16dp
+
+                    Spacer() // Empuja el botón hacia la derecha
+
+                    Button(action: {
+                        isFavorite.toggle() // Cambia el estado de favorito
+                        print("Is favorite now: \(isFavorite)") // Debugging
+                    }) {
+                        Image(systemName: isFavorite ? "bookmark.fill" : "bookmark")
                             .foregroundColor(.red)
-                    } else {
-                        ProgressView()
+                            .padding()
+                            .padding(.trailing, 16) // Padding derecho de 16dp
                     }
                 }
-                .frame(height: 300)
+                .padding(.top, -40) // Mover el HStack hacia arriba para que esté justo en el borde de la imagen y el gradiente
+                .onAppear {
+                                   checkIfFavorite()
 
-                // Título de la película
-                Text(movie.title)
-                    .font(.title2)
-                    .fontWeight(.bold)
-
-                // Información de la película
+                // Información adicional de la película
                 Group {
-                    Text("Year: \(movie.year)")
-                    Text("Rating: \(movie.rated ?? "NR")")
-                    Text("Runtime: \(movie.runtime ?? "N/A")")
-                    Text("Director: \(movie.director ?? "Unknown")")
-                    Text("Genre: \(movie.genre ?? "Unknown")")
-                    Text("Country: \(movie.country ?? "Unknown")")
+                    Text("Year: ").bold() + Text(movie.year)
+                                       Text("Runtime: ").bold() + Text(movie.runtime ?? "N/A")
+                                       Text("Director: ").bold() + Text(movie.director ?? "Unknown")
+                                       Text("Genre: ").bold() + Text(movie.genre ?? "Unknown")
+                                       Text("Country: ").bold() + Text(movie.country ?? "Unknown")
                 }
                 .font(.subheadline)
-                .foregroundColor(.secondary)
-                .padding(.bottom, 1)
+                .foregroundColor(.white)
+                .padding(.horizontal, 16) // Padding izquierdo de 16dp
 
                 Text(movie.plot ?? "No synopsis available.")
                     .font(.body)
-                    .padding(.bottom, 5)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16) // Padding izquierdo de 16dp
             }
-            .padding()
         }
-        .navigationTitle("Movie Details")
+        .background(Color.black) // Fondo negro
         .navigationBarTitleDisplayMode(.inline)
+        .edgesIgnoringSafeArea(.top)
     }
 }
-// Providing a sample movie for preview
+    private func checkIfFavorite() {
+            isFavorite = DataManager.shared.isFavorite(movieID: movie.imdbID, context: managedObjectContext)
+        }
+
+        private func toggleFavorite() {
+            isFavorite.toggle()
+            if isFavorite {
+                DataManager.shared.addFavoriteMovieToCoreData(movie: movie, context: managedObjectContext)
+            } else {
+                DataManager.shared.removeFavoriteMovieFromCoreData(movieID: movie.imdbID, context: managedObjectContext)
+            }
+        }
+    }
+
 struct DescriptionMovie_Previews: PreviewProvider {
     static var previews: some View {
         DescriptionMovie(movie: Movie(
@@ -79,6 +126,7 @@ struct DescriptionMovie_Previews: PreviewProvider {
             production: "Sony Pictures",
             website: "N/A"
         ))
+        .preferredColorScheme(.dark) // Muestra el preview en modo oscuro si deseas
     }
 }
 

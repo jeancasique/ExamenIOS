@@ -103,7 +103,7 @@ struct ProfileIcon: View {
         Image(systemName: "person.crop.circle")
             .resizable()
             .scaledToFit()
-            .frame(width: 40, height: 40)
+            .frame(width: 35, height: 35)
             .clipShape(Circle())
     }
 }
