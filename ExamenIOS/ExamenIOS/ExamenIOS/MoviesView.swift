@@ -4,7 +4,8 @@ struct MoviesView: View {
     @State private var searchText = ""
     @State private var movies: [Movie] = []
     @StateObject private var movieService = MovieService()
-
+    @StateObject private var userData = UserData()
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -26,7 +27,7 @@ struct MoviesView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     NavigationLink(destination: PerfilView()) {
-                        ProfileIcon()
+                        ProfileIcon(userData: userData)
                     }
                 }
             }
@@ -56,11 +57,11 @@ struct MovieDetailView: View {
                 DescriptionMovie(movie: movie)
             } else {
                 Text("Loading...")
-                .onAppear {
-                    movieService.fetchMovieDetails(imdbID: movieID) { fetchedMovie in
-                        self.movie = fetchedMovie
+                    .onAppear {
+                        movieService.fetchMovieDetails(imdbID: movieID) { fetchedMovie in
+                            self.movie = fetchedMovie
+                        }
                     }
-                }
             }
         }
     }
@@ -99,15 +100,25 @@ struct MovieCard: View {
 }
 
 struct ProfileIcon: View {
+    @ObservedObject var userData: UserData
+
     var body: some View {
-        Image(systemName: "person.crop.circle")
-            .resizable()
-            .scaledToFit()
-            .frame(width: 35, height: 35)
-            .clipShape(Circle())
+        if let profileImage = userData.profileImage {
+            Image(uiImage: profileImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 35, height: 35)
+                .clipShape(Circle())
+        } else {
+            Image(systemName: "person.circle")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 35, height: 35)
+                .foregroundColor(.blue)
+                .clipShape(Circle())
+        }
     }
 }
-
 
 struct MoviesView_Previews: PreviewProvider {
     static var previews: some View {

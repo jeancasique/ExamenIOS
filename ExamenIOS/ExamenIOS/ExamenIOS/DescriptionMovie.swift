@@ -1,11 +1,15 @@
 import SwiftUI
-import CoreData
+
+
 
 struct DescriptionMovie: View {
     var movie: Movie
     @State private var isFavorite: Bool = false // Estado inicial no favorito
-    @Environment(\.managedObjectContext) var managedObjectContext
-
+    init(movie: Movie) {
+           self.movie = movie
+           self._isFavorite = State(initialValue: DataManager.shared.isFavorite(movieId: movie.imdbID))
+       }
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
@@ -48,7 +52,7 @@ struct DescriptionMovie: View {
                     Spacer() // Empuja el botón hacia la derecha
 
                     Button(action: {
-                        isFavorite.toggle() // Cambia el estado de favorito
+                        toggleFavorite()
                         print("Is favorite now: \(isFavorite)") // Debugging
                     }) {
                         Image(systemName: isFavorite ? "bookmark.fill" : "bookmark")
@@ -58,11 +62,12 @@ struct DescriptionMovie: View {
                     }
                 }
                 .padding(.top, -40) // Mover el HStack hacia arriba para que esté justo en el borde de la imagen y el gradiente
-                .onAppear {
-                                   checkIfFavorite()
 
                 // Información adicional de la película
                 Group {
+                    if let rating = Double(movie.imdbRating ?? "0") {
+                                          StarRatingView(rating: rating)
+                                      }
                     Text("Year: ").bold() + Text(movie.year)
                                        Text("Runtime: ").bold() + Text(movie.runtime ?? "N/A")
                                        Text("Director: ").bold() + Text(movie.director ?? "Unknown")
@@ -83,20 +88,15 @@ struct DescriptionMovie: View {
         .navigationBarTitleDisplayMode(.inline)
         .edgesIgnoringSafeArea(.top)
     }
-}
-    private func checkIfFavorite() {
-            isFavorite = DataManager.shared.isFavorite(movieID: movie.imdbID, context: managedObjectContext)
-        }
-
-        private func toggleFavorite() {
-            isFavorite.toggle()
+    private func toggleFavorite() {
             if isFavorite {
-                DataManager.shared.addFavoriteMovieToCoreData(movie: movie, context: managedObjectContext)
+                DataManager.shared.removeFavorite(movieId: movie.imdbID)
             } else {
-                DataManager.shared.removeFavoriteMovieFromCoreData(movieID: movie.imdbID, context: managedObjectContext)
+                DataManager.shared.addFavorite(movieId: movie.imdbID)
             }
+            isFavorite.toggle() // Actualiza el estado de isFavorite para reflejar el cambio
         }
-    }
+}
 
 struct DescriptionMovie_Previews: PreviewProvider {
     static var previews: some View {
@@ -129,4 +129,29 @@ struct DescriptionMovie_Previews: PreviewProvider {
         .preferredColorScheme(.dark) // Muestra el preview en modo oscuro si deseas
     }
 }
+struct StarRatingView: View {
+    var rating: Double // Rating out of 10
 
+    private func starType(index: Int) -> String {
+        let filledStars = Int(rating / 2)
+        let hasHalfStar = (rating.truncatingRemainder(dividingBy: 2) >= 0.5)
+        if index < filledStars {
+            return "star.fill"
+        } else if index == filledStars && hasHalfStar {
+            return "star.leadinghalf.filled"
+        } else {
+            return "star"
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<5, id: \.self) { index in
+                Image(systemName: starType(index: index))
+                    .foregroundColor(.yellow)
+            }
+            Text(String(format: "%.1f/10", rating))
+                .fontWeight(.bold)
+        }
+    }
+}

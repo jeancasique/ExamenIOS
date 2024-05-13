@@ -16,6 +16,8 @@ struct LoginView: View {
     // Estado para controlar si el usuario está logueado
     @State private var isUserLoggedIn = false
     @Environment(\.colorScheme) var colorScheme
+    @StateObject var userData = UserData()
+ 
     
     var body: some View {
         
@@ -35,7 +37,7 @@ struct LoginView: View {
                 .navigationBarTitleDisplayMode(.inline) // Estilo del título
                 
                     .navigationDestination(isPresented: $isUserLoggedIn) { // Destino de navegación cuando el usuario está logueado
-                       MoviesView()
+                        MoviesView().environmentObject(userData)
                     }
                   
             }
@@ -407,8 +409,13 @@ struct LoginView: View {
 
 struct LoginView_Previews: PreviewProvider {
     static var previews: some View {
-        LoginView()
-           
+        Group {
+            LoginView()
+                .preferredColorScheme(.dark)
+            
+            LoginView()
+                .preferredColorScheme(.light)
+        }
     }
 }
 

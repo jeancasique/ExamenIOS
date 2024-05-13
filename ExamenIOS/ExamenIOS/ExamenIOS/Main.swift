@@ -18,12 +18,15 @@ class UserInterfaceMode: ObservableObject {
 struct MyApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject var userInterfaceMode = UserInterfaceMode()
+  
+   
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(userInterfaceMode) // Pasar el objeto observado al contenido de la aplicación
                 .preferredColorScheme(userInterfaceMode.isDarkModeEnabled ? .dark : .light)
+              
                 .onAppear {
                     NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillChangeFrameNotification, object: nil, queue: .main) { _ in
                         let isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark
@@ -38,7 +41,8 @@ struct MyApp: App {
 
 struct ContentView: View {
     @EnvironmentObject var userInterfaceMode: UserInterfaceMode
-
+    
+    
     var body: some View {
         ZStack {
             if userInterfaceMode.isDarkModeEnabled {
@@ -47,6 +51,8 @@ struct ContentView: View {
                 Color.white.edgesIgnoringSafeArea(.all)
             }
             LoginView()
+            
+            
         }
     }
 }

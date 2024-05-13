@@ -21,6 +21,7 @@ class UserData: ObservableObject {
 // Vista principal de perfil del usuario
 struct PerfilView: View {
     @StateObject private var userData = UserData() // Datos del usuario como objeto de estado
+    
     @State private var editingField: String?       // Campo actualmente en edición
     @State private var showActionSheet = false     // Controla la visibilidad del selector de imagen
     @State private var showImagePicker = false
@@ -29,14 +30,15 @@ struct PerfilView: View {
     @State private var sourceType: UIImagePickerController.SourceType?
     @State private var showDocumentPicker = false
     
+    
     var body: some View {
         NavigationView {
             ScrollView {
                 ZStack (alignment: .top) {
                     
                     Rectangle()
-                        .fill(Color.black)
-                        .frame(height: UIScreen.main.bounds.height * 0.2) // Ajusta este valor para controlar la altura del color
+                        .fill(Color.blue)
+                        .frame(height: UIScreen.main.bounds.height * 0.185) // Ajusta este valor para controlar la altura del color
                         .edgesIgnoringSafeArea(.top) // Solo extiende el color melón hasta el área segura superior
                     
                     VStack(alignment: .center, spacing: 20) {
@@ -128,6 +130,7 @@ struct PerfilView: View {
         .onTapGesture {
             self.showActionSheet = true
         }
+        
         .actionSheet(isPresented: $showActionSheet) {
             ActionSheet(title: Text("Selecciona una opción"), buttons: [
                 .default(Text("Abrir Galería")) {
@@ -462,6 +465,7 @@ struct PerfilView: View {
 struct PerfilView_Previews: PreviewProvider {
     static var previews: some View {
         PerfilView()
+        
     }
 }
 

@@ -22,6 +22,7 @@ struct RegistrationView: View {
     @State private var showAlert = false
     @State private var shouldNavigateToLogin = false
     @State private var showTermsSheet = false
+ 
 
     var body: some View {
         NavigationStack {
@@ -275,6 +276,7 @@ struct RegistrationView: View {
 struct RegistrationView_Previews: PreviewProvider {
     static var previews: some View {
         RegistrationView()
+        
     }
 }
 
