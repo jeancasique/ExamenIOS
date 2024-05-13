@@ -1,4 +1,6 @@
 import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
 
 struct MoviesView: View {
     @State private var searchText = ""
@@ -33,6 +35,7 @@ struct MoviesView: View {
             }
             .onAppear {
                 loadMovies(searchTerm: "Spider-Man") // Carga inicial con un término predeterminado
+                loadUserData() // Cargar datos del usuario
             }
         }
     }
@@ -43,6 +46,32 @@ struct MoviesView: View {
                 movies = result ?? []
             }
         }
+    }
+
+    private func loadUserData() {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).getDocument { (document, error) in
+            if let document = document, document.exists {
+                let data = document.data()
+                DispatchQueue.main.async {
+                    self.userData.firstName = data?["firstName"] as? String ?? ""
+                    if let urlString = data?["profileImageURL"] as? String {
+                        self.loadProfileImage(from: urlString)
+                    }
+                }
+            }
+        }
+    }
+
+    private func loadProfileImage(from urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            guard let data = data, error == nil else { return }
+            DispatchQueue.main.async {
+                self.userData.profileImage = UIImage(data: data)
+            }
+        }.resume()
     }
 }
 
@@ -81,8 +110,8 @@ struct MovieCard: View {
             .frame(width: 160, height: 200) // Ajustar el tamaño de la imagen
             .clipped()
             .cornerRadius(10)
-            .shadow(radius: 5)
-
+            .shadow(color: .gray, radius: 9)
+            
             Text(movie.title)
                 .font(.headline)
                 .lineLimit(1)
@@ -101,21 +130,33 @@ struct MovieCard: View {
 
 struct ProfileIcon: View {
     @ObservedObject var userData: UserData
-
+    
     var body: some View {
-        if let profileImage = userData.profileImage {
-            Image(uiImage: profileImage)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 35, height: 35)
-                .clipShape(Circle())
-        } else {
-            Image(systemName: "person.circle")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 35, height: 35)
-                .foregroundColor(.blue)
-                .clipShape(Circle())
+        HStack(spacing: 8) {
+            if let profileImage = userData.profileImage {
+                Image(uiImage: profileImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 35, height: 35)
+                    .clipShape(Circle())
+            } else {
+                Image(systemName: "person.circle")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 35, height: 35)
+                    .foregroundColor(.gray)
+                    .clipShape(Circle())
+            }
+            VStack(alignment: .leading) {
+                Text(userData.firstName.isEmpty ? "Hola, usuario!" : "Hola, \(userData.firstName)!")
+
+                    .foregroundColor(.white)
+                    .font(.system(size: 18))
+                Text("Encuentra tu película favorita")
+                    .font(.subheadline)
+                    .foregroundStyle(.gray)
+                    .italic(true)
+            }
         }
     }
 }

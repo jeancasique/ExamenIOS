@@ -37,7 +37,7 @@ struct PerfilView: View {
                 ZStack (alignment: .top) {
                     
                     Rectangle()
-                        .fill(Color.blue)
+                        .fill(Color.gray)
                         .frame(height: UIScreen.main.bounds.height * 0.185) // Ajusta este valor para controlar la altura del color
                         .edgesIgnoringSafeArea(.top) // Solo extiende el color melón hasta el área segura superior
                     
