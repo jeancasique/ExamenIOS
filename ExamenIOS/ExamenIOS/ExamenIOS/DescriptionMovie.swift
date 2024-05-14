@@ -1,14 +1,14 @@
 import SwiftUI
 
-
-
 struct DescriptionMovie: View {
     var movie: Movie
     @State private var isFavorite: Bool = false // Estado inicial no favorito
+
+    // Inicializar el estado del favorito basado en UserDefaults
     init(movie: Movie) {
-           self.movie = movie
-           self._isFavorite = State(initialValue: DataManager.shared.isFavorite(movieId: movie.imdbID))
-       }
+        self.movie = movie
+        self._isFavorite = State(initialValue: DataManager.shared.isFavorite(movieId: movie.imdbID))
+    }
     
     var body: some View {
         ScrollView {
@@ -20,18 +20,10 @@ struct DescriptionMovie: View {
                             image.resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .clipped()
-                        case .failure:
-                            Image("spider") // Imagen predeterminada en caso de error
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .clipped()
-                        case .empty:
-                            Image("spider") // Imagen predeterminada mientras carga la imagen
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .clipped()
+                       
                         @unknown default:
                             ProgressView()
+                                .frame(width: 400, height: 400)
                         }
                     }
                     .edgesIgnoringSafeArea(.top)
@@ -56,9 +48,12 @@ struct DescriptionMovie: View {
                         print("Is favorite now: \(isFavorite)") // Debugging
                     }) {
                         Image(systemName: isFavorite ? "bookmark.fill" : "bookmark")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 40, height: 25) // Ajusta el tamaño del marco aquí
                             .foregroundColor(.red)
                             .padding()
-                            .padding(.trailing, 16) // Padding derecho de 16dp
+                            .padding(.trailing, 1)
                     }
                 }
                 .padding(.top, -40) // Mover el HStack hacia arriba para que esté justo en el borde de la imagen y el gradiente
@@ -66,13 +61,13 @@ struct DescriptionMovie: View {
                 // Información adicional de la película
                 Group {
                     if let rating = Double(movie.imdbRating ?? "0") {
-                                          StarRatingView(rating: rating)
-                                      }
+                        StarRatingView(rating: rating)
+                    }
                     Text("Year: ").bold() + Text(movie.year)
-                                       Text("Runtime: ").bold() + Text(movie.runtime ?? "N/A")
-                                       Text("Director: ").bold() + Text(movie.director ?? "Unknown")
-                                       Text("Genre: ").bold() + Text(movie.genre ?? "Unknown")
-                                       Text("Country: ").bold() + Text(movie.country ?? "Unknown")
+                    Text("Runtime: ").bold() + Text(movie.runtime ?? "N/A")
+                    Text("Director: ").bold() + Text(movie.director ?? "Unknown")
+                    Text("Genre: ").bold() + Text(movie.genre ?? "Unknown")
+                    Text("Country: ").bold() + Text(movie.country ?? "Unknown")
                 }
                 .font(.subheadline)
                 .foregroundColor(.white)
@@ -88,14 +83,18 @@ struct DescriptionMovie: View {
         .navigationBarTitleDisplayMode(.inline)
         .edgesIgnoringSafeArea(.top)
     }
+
+    // Función para alternar el estado de favorito
     private func toggleFavorite() {
-            if isFavorite {
-                DataManager.shared.removeFavorite(movieId: movie.imdbID)
-            } else {
-                DataManager.shared.addFavorite(movieId: movie.imdbID)
-            }
-            isFavorite.toggle() // Actualiza el estado de isFavorite para reflejar el cambio
+        if isFavorite {
+            DataManager.shared.removeFavorite(movieId: movie.imdbID)
+            print("la pelicula no es favorita")
+        } else {
+            DataManager.shared.addFavorite(movieId: movie.imdbID, movieTitle: movie.title)
+            print("la pelicula es favorita")
         }
+        isFavorite.toggle() // Actualiza el estado de isFavorite para reflejar el cambio
+    }
 }
 
 struct DescriptionMovie_Previews: PreviewProvider {
@@ -129,6 +128,7 @@ struct DescriptionMovie_Previews: PreviewProvider {
         .preferredColorScheme(.dark) // Muestra el preview en modo oscuro si deseas
     }
 }
+
 struct StarRatingView: View {
     var rating: Double // Rating out of 10
 
@@ -155,3 +155,4 @@ struct StarRatingView: View {
         }
     }
 }
+
