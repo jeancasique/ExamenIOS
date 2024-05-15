@@ -18,41 +18,43 @@ class UserInterfaceMode: ObservableObject {
 struct MyApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject var userInterfaceMode = UserInterfaceMode()
-  
-   
+    @StateObject var sessionStore = SessionStore()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(userInterfaceMode) // Pasar el objeto observado al contenido de la aplicación
-                .preferredColorScheme(userInterfaceMode.isDarkModeEnabled ? .dark : .light)
-              
-                .onAppear {
-                    NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillChangeFrameNotification, object: nil, queue: .main) { _ in
-                        let isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark
-                        if isDarkModeEnabled != userInterfaceMode.isDarkModeEnabled {
-                            userInterfaceMode.isDarkModeEnabled = isDarkModeEnabled
+            if sessionStore.isLoggedIn {
+                MoviesView()
+                    .environmentObject(sessionStore)
+                    .environmentObject(userInterfaceMode)
+                    .preferredColorScheme(userInterfaceMode.isDarkModeEnabled ? .dark : .light)
+                    .onAppear {
+                        NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillChangeFrameNotification, object: nil, queue: .main) { _ in
+                            let isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark
+                            if isDarkModeEnabled != userInterfaceMode.isDarkModeEnabled {
+                                userInterfaceMode.isDarkModeEnabled = isDarkModeEnabled
+                            }
                         }
                     }
-                }
-        }
-    }
-}
-
-struct ContentView: View {
-    @EnvironmentObject var userInterfaceMode: UserInterfaceMode
-    
-    
-    var body: some View {
-        ZStack {
-            if userInterfaceMode.isDarkModeEnabled {
-                Color.black.edgesIgnoringSafeArea(.all)
+                    .onAppear {
+                        sessionStore.listen()
+                    }
             } else {
-                Color.white.edgesIgnoringSafeArea(.all)
+                LoginView()
+                    .environmentObject(sessionStore)
+                    .environmentObject(userInterfaceMode)
+                    .preferredColorScheme(userInterfaceMode.isDarkModeEnabled ? .dark : .light)
+                    .onAppear {
+                        NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillChangeFrameNotification, object: nil, queue: .main) { _ in
+                            let isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark
+                            if isDarkModeEnabled != userInterfaceMode.isDarkModeEnabled {
+                                userInterfaceMode.isDarkModeEnabled = isDarkModeEnabled
+                            }
+                        }
+                    }
+                    .onAppear {
+                        sessionStore.listen()
+                    }
             }
-            LoginView()
-            
-            
         }
     }
 }

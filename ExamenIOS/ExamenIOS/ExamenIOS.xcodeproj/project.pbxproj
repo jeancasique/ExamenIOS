@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		699DA3ED2BF3B53200CAFF4C /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 699DA3EC2BF3B53200CAFF4C /* SessionStore.swift */; };
 		6C63206F2BEB729600A13986 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C63206E2BEB729600A13986 /* Main.swift */; };
 		6C6320712BEB729600A13986 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6320702BEB729600A13986 /* LoginView.swift */; };
 		6C6320732BEB729700A13986 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6C6320722BEB729700A13986 /* Assets.xcassets */; };
@@ -59,6 +60,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		699DA3EC2BF3B53200CAFF4C /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		6C63206B2BEB729600A13986 /* ExamenIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExamenIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C63206E2BEB729600A13986 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
 		6C6320702BEB729600A13986 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
@@ -156,6 +158,7 @@
 				6C63209F2BEB846E00A13986 /* DescriptionMovie.swift */,
 				6CF6E9EA2BF3807A001A4DC0 /* FavoritesMovies.swift */,
 				6CF6E9EC2BF38094001A4DC0 /* Ajustes.swift */,
+				699DA3EC2BF3B53200CAFF4C /* SessionStore.swift */,
 				6C63209A2BEB789C00A13986 /* Data */,
 				6C6320722BEB729700A13986 /* Assets.xcassets */,
 				6C6320742BEB729700A13986 /* Preview Content */,
@@ -374,6 +377,7 @@
 				6CF6E9E92BF38058001A4DC0 /* MenuView.swift in Sources */,
 				6CF6E9EB2BF3807A001A4DC0 /* FavoritesMovies.swift in Sources */,
 				6C63209C2BEB78AF00A13986 /* Movies.swift in Sources */,
+				699DA3ED2BF3B53200CAFF4C /* SessionStore.swift in Sources */,
 				6C6320B72BEB8D5300A13986 /* Registrationview.swift in Sources */,
 				6CF6E9E22BF365AE001A4DC0 /* PerfilData.swift in Sources */,
 				6CF6E9ED2BF38094001A4DC0 /* Ajustes.swift in Sources */,

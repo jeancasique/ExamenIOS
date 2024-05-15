@@ -8,22 +8,18 @@ import LocalAuthentication
 import AuthenticationServices
 import Kingfisher
 
-// Clase para gestionar los datos del usuario utilizando el patrón ObservableObject
 class UserData: ObservableObject {
-    @Published var email: String = ""                   // Correo electrónico del usuario
-    @Published var firstName: String = ""               // Nombre del usuario
-    @Published var lastName: String = ""                // Apellidos del usuario
-    @Published var birthDate: Date = Date()             // Fecha de nacimiento del usuario
-    @Published var gender: String = ""                  // Género del usuario
-    @Published var profileImage: UIImage?               // Imagen de perfil del usuario
-    @Published var profileImageURL: String = ""         // URL de la imagen de perfil del usuario
+    @Published var email: String = ""
+    @Published var firstName: String = ""
+    @Published var lastName: String = ""
+    @Published var birthDate: Date = Date()
+    @Published var gender: String = ""
+    @Published var profileImage: UIImage?
+    @Published var profileImageURL: String? = nil // Cambiar a opcional
 }
 
-// Vista principal de perfil del usuario
 struct PerfilView: View {
-    @StateObject private var userData = UserData() // Datos del usuario como objeto de estado
-    
-    // Estados para controlar la edición y visualización de la vista
+    @StateObject private var userData = UserData()
     @State private var editingField: String? = nil
     @State private var showActionSheet = false
     @State private var showImagePicker = false
@@ -31,29 +27,26 @@ struct PerfilView: View {
     @State private var alertMessage = ""
     @State private var sourceType: UIImagePickerController.SourceType? = nil
     @State private var showDocumentPicker = false
-    
+    @Environment(\.presentationMode) var presentationMode
+
     var body: some View {
-        NavigationView {
+        VStack {
             ScrollView {
                 ZStack(alignment: .top) {
-                    // Fondo gris en la parte superior de la pantalla
                     Rectangle()
                         .fill(Color.blue)
                         .frame(height: UIScreen.main.bounds.height * 0.185)
                         .edgesIgnoringSafeArea(.top)
                     
                     VStack(alignment: .center, spacing: 20) {
-                        // Mostrar el nombre del usuario
                         Text(userData.firstName)
                             .font(.title)
                             .fontWeight(.bold)
                             .padding(.top, 10)
                         
-                        // Sección para la imagen de perfil
                         profileImageSection
                             .padding(.top, 20)
                         
-                        // Mostrar el correo electrónico del usuario
                         VStack(alignment: .leading) {
                             Text("Email")
                                 .padding(.vertical, 1)
@@ -71,7 +64,6 @@ struct PerfilView: View {
                         }
                         .padding(.vertical, 1)
                         
-                        // Sección de información del usuario
                         VStack(alignment: .leading) {
                             userInfoField(label: "Nombre", value: $userData.firstName, editing: $editingField, fieldKey: "firstName", editable: true)
                             userInfoField(label: "Apellidos", value: $userData.lastName, editing: $editingField, fieldKey: "lastName", editable: true)
@@ -79,7 +71,6 @@ struct PerfilView: View {
                             genderPickerField(label: "Género", value: $userData.gender, editing: $editingField, fieldKey: "gender")
                         }
                         
-                        // Botón para guardar cambios
                         Button("Guardar Cambios", action: saveData)
                             .padding()
                             .foregroundColor(.white)
@@ -90,7 +81,7 @@ struct PerfilView: View {
                     }
                     .padding()
                 }
-                .onAppear(perform: loadUserData) // Cargar los datos del usuario al aparecer la vista
+                .onAppear(perform: loadUserData)
                 .sheet(isPresented: $showImagePicker) {
                     ImagePicker(image: $userData.profileImage)
                 }
@@ -102,10 +93,18 @@ struct PerfilView: View {
                     )
                 }
             }
+            .navigationBarItems(leading: Button(action: {
+                self.presentationMode.wrappedValue.dismiss()
+            }) {
+                HStack {
+                    Image(systemName: "chevron.left")
+                    Text("Back")
+                }
+            })
         }
+        .navigationBarBackButtonHidden(true)
     }
     
-    // Sección que muestra y gestiona la imagen de perfil
     var profileImageSection: some View {
         ZStack {
             Circle()
@@ -113,10 +112,17 @@ struct PerfilView: View {
                 .frame(width: 140, height: 140)
                 .shadow(radius: 10)
             
-            if let image = userData.profileImage {
-                Image(uiImage: image)
+            if let urlString = userData.profileImageURL, let url = URL(string: urlString) {
+                KFImage(url)
                     .resizable()
-                    .scaledToFill()
+                    .placeholder {
+                        Image(systemName: "person.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 130, height: 130)
+                            .foregroundColor(.white)
+                    }
+                    .cancelOnDisappear(true)
                     .clipShape(Circle())
                     .frame(width: 130, height: 130)
             } else {
@@ -155,7 +161,6 @@ struct PerfilView: View {
         }
     }
 
-    // Función para generar campos de usuario editables
     func userInfoField(label: String, value: Binding<String>, editing: Binding<String?>, fieldKey: String, editable: Bool) -> some View {
         VStack(alignment: .leading) {
             Text(label)
@@ -163,7 +168,7 @@ struct PerfilView: View {
             
             HStack {
                 if editing.wrappedValue == fieldKey {
-                    TextField("", text: value) // Usando el texto vacío para el placeholder
+                    TextField("", text: value)
                         .background(.blue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .cornerRadius(5)
@@ -189,7 +194,6 @@ struct PerfilView: View {
         .padding(.vertical, 8)
     }
 
-    // Función para generar un selector de fechas con consistencia en el diseño
     func datePickerField(label: String, date: Binding<Date>, editing: Binding<String?>, fieldKey: String) -> some View {
         HStack {
             Text(label)
@@ -216,59 +220,58 @@ struct PerfilView: View {
         }
         .padding(.vertical, 8)
     }
-    // Función para generar un campo de selección de género con consistencia en el diseño
-       func genderPickerField(label: String, value: Binding<String>, editing: Binding<String?>, fieldKey: String) -> some View {
-           VStack(alignment: .leading) {
-               Text(label)
-                   .fontWeight(.bold)
-               
-               HStack {
-                   if editing.wrappedValue == fieldKey {
-                       Picker(selection: value, label: Text("")) {
-                           Text("Masculino").tag("Masculino")
-                           Text("Femenino").tag("Femenino")
-                       }
-                       .pickerStyle(SegmentedPickerStyle())
-                       .background(Color.gray)
-                       .cornerRadius(5)
-                       
-                       Button(action: { editing.wrappedValue = nil }) {
-                           Image(systemName: "checkmark.circle.fill")
-                               .foregroundColor(.green)
-                       }
-                   } else {
-                       Text(value.wrappedValue)
-                           .frame(maxWidth: .infinity, alignment: .leading)
-                       
-                       Button(action: { editing.wrappedValue = fieldKey }) {
-                           Image(systemName: "pencil.circle.fill")
-                               .foregroundColor(.blue)
-                       }
-                       .buttonStyle(BorderlessButtonStyle())
-                   }
-               }
-           }
-           .padding(.vertical, 8)
-       }
-    // Función para guardar los cambios realizados a los datos del usuario
+
+    func genderPickerField(label: String, value: Binding<String>, editing: Binding<String?>, fieldKey: String) -> some View {
+        VStack(alignment: .leading) {
+            Text(label)
+                .fontWeight(.bold)
+            
+            HStack {
+                if editing.wrappedValue == fieldKey {
+                    Picker(selection: value, label: Text("")) {
+                        Text("Masculino").tag("Masculino")
+                        Text("Femenino").tag("Femenino")
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .background(Color.gray)
+                    .cornerRadius(5)
+                    
+                    Button(action: { editing.wrappedValue = nil }) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                    }
+                } else {
+                    Text(value.wrappedValue)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Button(action: { editing.wrappedValue = fieldKey }) {
+                        Image(systemName: "pencil.circle.fill")
+                            .foregroundColor(.blue)
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                }
+            }
+        }
+        .padding(.vertical, 8)
+    }
+
     func saveData() {
-        guard let userId = Auth.auth().currentUser?.uid else { return } // Verifica si hay un usuario autenticado
+        guard let userId = Auth.auth().currentUser?.uid else { return }
         
         if let profileImage = userData.profileImage {
-            saveProfileImage(userId: userId, image: profileImage) // Guarda la imagen de perfil si está disponible
+            saveProfileImage(userId: userId, image: profileImage)
         }
         
-        let db = Firestore.firestore() // Obtiene una instancia de Firestore
-        let userData = [
+        let db = Firestore.firestore()
+        let userData: [String: Any] = [
             "email": self.userData.email,
             "firstName": self.userData.firstName,
             "lastName": self.userData.lastName,
             "birthDate": DateFormatter.iso8601Full.string(from: self.userData.birthDate),
             "gender": self.userData.gender,
-            "profileImageURL": self.userData.profileImageURL
+            "profileImageURL": self.userData.profileImageURL ?? "" // Usar el valor opcional correctamente
         ]
         
-        // Guarda los datos del usuario en Firestore
         db.collection("users").document(userId).setData(userData) { error in
             if let error = error {
                 print("Error updating user data: \(error.localizedDescription)")
@@ -276,12 +279,13 @@ struct PerfilView: View {
                 print("User data updated successfully")
                 self.showAlert = true
                 self.alertMessage = "Datos guardados correctamente"
-                PerfilData.shared.saveUserData(userData: self.userData) // Guarda los datos en caché
+                if let profileImageURL = self.userData.profileImageURL {
+                    DataManager.shared.cacheProfileImageURL(profileImageURL) // Cachear URL de imagen
+                }
             }
         }
     }
 
-    // Función para cargar la imagen de perfil desde Google
     func loadImageFromGoogle() {
         if userData.profileImage == nil {
             guard let user = Auth.auth().currentUser else {
@@ -299,7 +303,7 @@ struct PerfilView: View {
                         if let image = UIImage(data: data) {
                             self.userData.profileImage = image
                             self.saveProfileImage(userId: user.uid, image: image)
-                            PerfilData.shared.cacheProfileImage(urlString: imageUrl.absoluteString)
+                            DataManager.shared.cacheProfileImageURL(imageUrl.absoluteString)
                         }
                     }
                 }.resume()
@@ -309,26 +313,10 @@ struct PerfilView: View {
         }
     }
     
-    // Función para cargar los datos del usuario desde Firestore
     func loadUserData() {
-        let cachedData = PerfilData.shared.loadUserData() // Carga los datos desde la caché
-        self.userData.email = cachedData.email
-        self.userData.firstName = cachedData.firstName
-        self.userData.lastName = cachedData.lastName
-        self.userData.birthDate = cachedData.birthDate
-        self.userData.gender = cachedData.gender
-        self.userData.profileImageURL = cachedData.profileImageURL
+        guard let userId = Auth.auth().currentUser?.uid else { return }
         
-        // Carga la imagen de perfil desde la caché
-        PerfilData.shared.loadProfileImage(urlString: cachedData.profileImageURL) { image in
-            if let image = image {
-                self.userData.profileImage = image
-            }
-        }
-        
-        guard let userId = Auth.auth().currentUser?.uid else { return } // Verifica si hay un usuario autenticado
-        
-        let db = Firestore.firestore() // Obtiene una instancia de Firestore
+        let db = Firestore.firestore()
         
         db.collection("users").document(userId).getDocument { document, error in
             if let document = document, document.exists {
@@ -357,8 +345,6 @@ struct PerfilView: View {
                     } else {
                         self.loadImageFromGoogle()
                     }
-                    
-                    PerfilData.shared.saveUserData(userData: self.userData) // Guarda los datos en caché
                 }
             } else {
                 self.loadUserDataFromApple()
@@ -366,7 +352,6 @@ struct PerfilView: View {
         }
     }
 
-    // Función para cargar los datos del usuario desde Apple
     func loadUserDataFromApple() {
         if userData.profileImage == nil {
             guard let user = Auth.auth().currentUser else {
@@ -377,14 +362,9 @@ struct PerfilView: View {
             userData.email = user.email ?? ""
             userData.firstName = user.displayName?.components(separatedBy: " ").first ?? ""
             userData.lastName = user.displayName?.components(separatedBy: " ").last ?? ""
-            
-            DispatchQueue.main.async {
-                PerfilData.shared.saveUserData(userData: self.userData) // Guarda los datos en caché
-            }
         }
     }
 
-    // Función para actualizar los datos del usuario en el objeto UserData y en la vista
     func updateUserData(with data: [String: Any]?) {
         guard let data = data else { return }
         self.userData.email = data["email"] as? String ?? ""
@@ -402,20 +382,23 @@ struct PerfilView: View {
         } else {
             self.loadUserDataFromApple()
         }
-        
-        PerfilData.shared.saveUserData(userData: self.userData) // Guarda los datos en caché
     }
 
-    // Función para cargar la imagen de perfil desde una URL
     func loadProfileImageFromURL() {
-        PerfilData.shared.loadProfileImage(urlString: userData.profileImageURL) { image in
-            if let image = image {
-                self.userData.profileImage = image
+        guard let urlString = userData.profileImageURL, let url = URL(string: urlString) else { return }
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            guard let data = data, error == nil else {
+                print("Failed to download image data:", error?.localizedDescription ?? "Unknown error")
+                return
             }
-        }
+            DispatchQueue.main.async {
+                if let image = UIImage(data: data) {
+                    self.userData.profileImage = image
+                }
+            }
+        }.resume()
     }
 
-    // Función para guardar la imagen de perfil en Firebase Storage y obtener la URL de descarga
     func saveProfileImage(userId: String, image: UIImage) {
         let resizedImage = image.resized(to: CGSize(width: 300, height: 300))
         
@@ -441,13 +424,12 @@ struct PerfilView: View {
                 DispatchQueue.main.async {
                     self.userData.profileImageURL = downloadURL.absoluteString
                     self.updateProfileImageURLInFirestore(userId: userId, imageUrl: downloadURL.absoluteString)
-                    PerfilData.shared.cacheProfileImage(urlString: downloadURL.absoluteString)
+                    DataManager.shared.cacheProfileImageURL(downloadURL.absoluteString)
                 }
             }
         }
     }
 
-    // Función para actualizar la URL de la imagen de perfil en Firestore
     func updateProfileImageURLInFirestore(userId: String, imageUrl: String) {
         let db = Firestore.firestore()
         db.collection("users").document(userId).updateData(["profileImageURL": imageUrl]) { error in
@@ -460,14 +442,12 @@ struct PerfilView: View {
     }
 }
 
-// Vista de previsualización para SwiftUI
 struct PerfilView_Previews: PreviewProvider {
     static var previews: some View {
         PerfilView()
     }
 }
 
-// Extensión de DateFormatter para usar el formato ISO8601 completo
 extension DateFormatter {
     static let iso8601Full: DateFormatter = {
         let formatter = DateFormatter()
@@ -476,7 +456,6 @@ extension DateFormatter {
     }()
 }
 
-// Extensión de UIImage para redimensionar imágenes
 extension UIImage {
     func resized(to newSize: CGSize) -> UIImage {
         UIGraphicsBeginImageContextWithOptions(newSize, false, 0.0)

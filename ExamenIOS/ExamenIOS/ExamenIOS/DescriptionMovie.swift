@@ -3,16 +3,17 @@ import SwiftUI
 struct DescriptionMovie: View {
     var movie: Movie
     @State private var isFavorite: Bool = false // Estado inicial no favorito
+    @EnvironmentObject var session: SessionStore
 
-    // Inicializar el estado del favorito basado en UserDefaults
+    // Inicialización de la vista
     init(movie: Movie) {
         self.movie = movie
-        self._isFavorite = State(initialValue: DataManager.shared.isFavorite(movieId: movie.imdbID))
     }
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
+                // Imagen de la película con un gradiente en la parte inferior
                 ZStack(alignment: .bottom) {
                     AsyncImage(url: URL(string: movie.poster)) { phase in
                         switch phase {
@@ -20,7 +21,6 @@ struct DescriptionMovie: View {
                             image.resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .clipped()
-                       
                         @unknown default:
                             ProgressView()
                                 .frame(width: 400, height: 400)
@@ -43,9 +43,10 @@ struct DescriptionMovie: View {
 
                     Spacer() // Empuja el botón hacia la derecha
 
+                    // Botón para marcar como favorito
                     Button(action: {
                         toggleFavorite()
-                        print("Is favorite now: \(isFavorite)") // Debugging
+                        print("Is favorite now: \(isFavorite)") // Depuración
                     }) {
                         Image(systemName: isFavorite ? "bookmark.fill" : "bookmark")
                             .resizable()
@@ -82,21 +83,28 @@ struct DescriptionMovie: View {
         .background(Color.black) // Fondo negro
         .navigationBarTitleDisplayMode(.inline)
         .edgesIgnoringSafeArea(.top)
+        .onAppear {
+            // Verificar si la película es favorita al aparecer la vista
+            DataManager.shared.isFavorite(movieId: movie.imdbID) { isFavorite in
+                self.isFavorite = isFavorite
+            }
+        }
     }
 
     // Función para alternar el estado de favorito
     private func toggleFavorite() {
         if isFavorite {
             DataManager.shared.removeFavorite(movieId: movie.imdbID)
-            print("la pelicula no es favorita")
+            print("La película no es favorita")
         } else {
             DataManager.shared.addFavorite(movieId: movie.imdbID, movieTitle: movie.title)
-            print("la pelicula es favorita")
+            print("La película es favorita")
         }
         isFavorite.toggle() // Actualiza el estado de isFavorite para reflejar el cambio
     }
 }
 
+// Vista de previsualización para SwiftUI
 struct DescriptionMovie_Previews: PreviewProvider {
     static var previews: some View {
         DescriptionMovie(movie: Movie(
@@ -129,6 +137,7 @@ struct DescriptionMovie_Previews: PreviewProvider {
     }
 }
 
+// Vista para mostrar la calificación con estrellas
 struct StarRatingView: View {
     var rating: Double // Rating out of 10
 

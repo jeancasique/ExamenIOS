@@ -8,36 +8,59 @@ struct MoviesView: View {
     @State private var movies: [Movie] = [] // Estado para almacenar las películas
     @StateObject private var movieService = MovieService() // Servicio para obtener películas
     @StateObject private var userData = UserData() // Datos del usuario
+    @State private var isMenuOpen = false // Estado para controlar el menú
+    @EnvironmentObject var session: SessionStore
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                // Disposición en una cuadrícula de las tarjetas de películas
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 160)), GridItem(.adaptive(minimum: 160))], spacing: 10) {
-                    ForEach(movies, id: \.imdbID) { movie in
-                        NavigationLink(destination: MovieDetailView(movieID: movie.imdbID)) {
-                            MovieCard(movie: movie)
-                                .frame(width: 160, height: 240) // Ajustar tamaño de las tarjetas
+        ZStack(alignment: .leading) { // Envolver el contenido en un ZStack
+            NavigationView {
+                ScrollView {
+                    // Disposición en una cuadrícula de las tarjetas de películas
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160)), GridItem(.adaptive(minimum: 160))], spacing: 10) {
+                        ForEach(movies, id: \.imdbID) { movie in
+                            NavigationLink(destination: MovieDetailView(movieID: movie.imdbID)) {
+                                MovieCard(movie: movie)
+                                    .frame(width: 160, height: 240) // Ajustar tamaño de las tarjetas
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .background(Color.black)
+                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+                .onChange(of: searchText) { newValue in
+                    loadMovies(searchTerm: newValue) // Cargar películas según el término de búsqueda
+                }
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(action: {
+                            withAnimation {
+                                isMenuOpen.toggle() // Abrir/cerrar el menú
+                            }
+                        }) {
+                            ProfileIcon(userData: userData) // Icono de perfil del usuario
                         }
                     }
                 }
-                .padding(.horizontal)
-            }
-            .background(Color.black)
-            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
-            .onChange(of: searchText) { newValue in
-                loadMovies(searchTerm: newValue) // Cargar películas según el término de búsqueda
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    NavigationLink(destination: PerfilView()) {
-                        ProfileIcon(userData: userData) // Icono de perfil del usuario
-                    }
+                .onAppear {
+                    updateMoviesBasedOnSearchText() // Actualizar películas según el texto del buscador
+                    loadUserData() // Cargar datos del usuario
                 }
+                .navigationBarBackButtonHidden(true) // Ocultar botón de retroceso
             }
-            .onAppear {
-                updateMoviesBasedOnSearchText() // Actualizar películas según el texto del buscador
-                loadUserData() // Cargar datos del usuario
+            .navigationViewStyle(StackNavigationViewStyle()) // Asegurar el estilo de navegación para ocultar el botón de retroceso
+            
+            if isMenuOpen {
+                Color.black.opacity(0.3)
+                    .edgesIgnoringSafeArea(.all)
+                    .onTapGesture {
+                        withAnimation {
+                            isMenuOpen.toggle() // Cerrar el menú al tocar fuera de él
+                        }
+                    }
+
+                MenuView(isOpen: $isMenuOpen)
+                    .transition(.move(edge: .leading)) // Animación de transición
             }
         }
     }
@@ -125,7 +148,7 @@ struct MovieCard: View {
             .cornerRadius(10)
             .shadow(color: .gray, radius: 9)
             
-            VStack{
+            VStack {
                 Text(movie.title)
                     .font(.headline)
                     .lineLimit(1)
@@ -186,6 +209,7 @@ struct ProfileIcon: View {
 struct MoviesView_Previews: PreviewProvider {
     static var previews: some View {
         MoviesView()
+            .environmentObject(SessionStore()) // Proporcionar una instancia de SessionStore para la previsualización
     }
 }
 

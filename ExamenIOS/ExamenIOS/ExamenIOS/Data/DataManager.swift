@@ -5,49 +5,17 @@ import FirebaseAuth
 class DataManager {
     static let shared = DataManager()
     private let favoritesKey = "favorites"
+    private let profileImageURLKey = "profileImageURL"
 
     // UserDefaults management
     func addFavorite(movieId: String, movieTitle: String) {
-        var favorites = fetchFavorites()
-        if !favorites.contains(movieId) {
-            favorites.append(movieId)
-            UserDefaults.standard.set(favorites, forKey: favoritesKey)
-            print("Favorite movie added to UserDefaults")
-
-            // Add favorite to Firestore
-            addFavoriteToFirestore(movieId: movieId, movieTitle: movieTitle)
-        }
-    }
-
-    func removeFavorite(movieId: String) {
-        var favorites = fetchFavorites()
-        if let index = favorites.firstIndex(of: movieId) {
-            favorites.remove(at: index)
-            UserDefaults.standard.set(favorites, forKey: favoritesKey)
-            print("Favorite movie removed from UserDefaults")
-
-            // Remove favorite from Firestore
-            removeFavoriteFromFirestore(movieId: movieId)
-        }
-    }
-
-    func isFavorite(movieId: String) -> Bool {
-        let favorites = fetchFavorites()
-        return favorites.contains(movieId)
-    }
-
-    private func fetchFavorites() -> [String] {
-        return UserDefaults.standard.array(forKey: favoritesKey) as? [String] ?? []
-    }
-
-    private func addFavoriteToFirestore(movieId: String, movieTitle: String) {
-        guard let user = Auth.auth().currentUser else { return }
+        guard let userId = Auth.auth().currentUser?.uid else { return } // Verifica que hay un usuario autenticado
         let db = Firestore.firestore()
         let favoriteData: [String: Any] = [
             "movieId": movieId,
             "movieTitle": movieTitle,
-            "userId": user.uid,
-            "userEmail": user.email ?? "Unknown"
+            "userId": userId,
+            "userEmail": Auth.auth().currentUser?.email ?? "Unknown"
         ]
         db.collection("FavoriteMovie").addDocument(data: favoriteData) { error in
             if let error = error {
@@ -58,8 +26,8 @@ class DataManager {
         }
     }
 
-    private func removeFavoriteFromFirestore(movieId: String) {
-        guard let userId = Auth.auth().currentUser?.uid else { return }
+    func removeFavorite(movieId: String) {
+        guard let userId = Auth.auth().currentUser?.uid else { return } // Verifica que hay un usuario autenticado
         let db = Firestore.firestore()
         let query = db.collection("FavoriteMovie").whereField("movieId", isEqualTo: movieId).whereField("userId", isEqualTo: userId)
         query.getDocuments { snapshot, error in
@@ -77,6 +45,32 @@ class DataManager {
                 }
             }
         }
+    }
+
+    func isFavorite(movieId: String, completion: @escaping (Bool) -> Void) {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            completion(false)
+            return
+        }
+        let db = Firestore.firestore()
+        let query = db.collection("FavoriteMovie").whereField("movieId", isEqualTo: movieId).whereField("userId", isEqualTo: userId)
+        query.getDocuments { snapshot, error in
+            if let error = error {
+                print("Error fetching favorite status from Firestore: \(error)")
+                completion(false)
+                return
+            }
+            completion(!snapshot!.documents.isEmpty)
+        }
+    }
+
+    // Cache management for profile image URL
+    func cacheProfileImageURL(_ url: String) {
+        UserDefaults.standard.set(url, forKey: profileImageURLKey)
+    }
+
+    func getCachedProfileImageURL() -> String? {
+        return UserDefaults.standard.string(forKey: profileImageURLKey)
     }
 }
 

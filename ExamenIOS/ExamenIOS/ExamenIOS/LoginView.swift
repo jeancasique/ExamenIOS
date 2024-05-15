@@ -8,6 +8,7 @@ import AuthenticationServices
 
 struct LoginView: View {
     // Estados para almacenar el correo electrónico y contraseña ingresados por el usuario
+    @EnvironmentObject var session: SessionStore
     @State private var email = ""
     @State private var password = ""
     // Estados para manejar errores de validación de correo electrónico y contraseña
@@ -35,9 +36,15 @@ struct LoginView: View {
                 .padding() // Padding general para el VStack
                 .navigationTitle("Iniciar Sesión") // Título de la barra de navegación
                 .navigationBarTitleDisplayMode(.inline) // Estilo del título
-                
-                    .navigationDestination(isPresented: $isUserLoggedIn) { // Destino de navegación cuando el usuario está logueado
-                        MoviesView().environmentObject(userData)
+                .toolbar { // Añadimos esta sección de toolbar
+                                    ToolbarItem(placement: .navigationBarLeading) {
+                                        EmptyView() // Este espacio vacío ayuda a ocultar el botón de retroceso en MoviesView
+                                    }
+                                }
+                                .navigationDestination(isPresented: $isUserLoggedIn) {
+                                    MoviesView().environmentObject(userData)
+                                        .navigationBarBackButtonHidden(true)
+                   
                     }
                   
             }
