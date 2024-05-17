@@ -2,33 +2,38 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
 	<key>CFBundleIdentifier</key>
-	<string></string>
+	<string>ExamenIOS.ExamenIOS</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb318007808062579</string>
+				<string>ExamenIOS.ExamenIOS</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSAppleMusicUsageDescription</key>
-	<string></string>
+	<string>Esta aplicación necesita acceso a tu biblioteca de música para ...</string>
 	<key>NSCameraUsageDescription</key>
-	<string></string>
+	<string>Esta aplicación necesita acceso a tu cámara para ...</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string></string>
+	<string>Esta aplicación necesita acceso a Face ID para ...</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string></string>
+	<string>Esta aplicación necesita acceso a tu biblioteca de fotos para ...</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.944597412661-20r6en0vrrhhqj3j2tobso5a84k9fjfu</string>
-			</array>
-		</dict>
-	</array>
+	<key>FacebookAppID</key>
+	<string>318007808062579</string>
+	<key>FacebookClientToken</key>
+	<string>b600c14eed865bbfda5e2734e909ee31</string>
+	<key>FacebookDisplayName</key>
+	<string>ExamenIOS</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
 </dict>
 </plist>

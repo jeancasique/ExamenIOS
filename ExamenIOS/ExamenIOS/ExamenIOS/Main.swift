@@ -3,18 +3,40 @@ import FirebaseCore
 import Firebase
 import UIKit
 import UserNotifications
+import FacebookCore
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     
     // Función que se llama cuando la aplicación ha terminado de lanzarse
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure() // Configura Firebase
+
+        // Configurar Facebook SDK
+        ApplicationDelegate.shared.application(
+            application,
+            didFinishLaunchingWithOptions: launchOptions
+        )
         
         // Configurar notificaciones locales
         configureUserNotifications() // Llama a la función para configurar notificaciones de usuario
         
         return true // Retorna true indicando que la aplicación se lanzó correctamente
     }
+
+    // Función para manejar URL abiertos por la aplicación (necesario para Facebook SDK)
+    func application(
+        _ app: UIApplication,
+        open url: URL,
+        options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+    ) -> Bool {
+        ApplicationDelegate.shared.application(
+            app,
+            open: url,
+            sourceApplication: options[UIApplication.OpenURLOptionsKey.sourceApplication] as? String,
+            annotation: options[UIApplication.OpenURLOptionsKey.annotation]
+        )
+    }
+
     // Función para configurar las notificaciones de usuario
     func configureUserNotifications() {
         NotificationManager.shared.requestAuthorization() // Solicita autorización para enviar notificaciones
@@ -40,13 +62,11 @@ class UserInterfaceMode: ObservableObject {
 }
 
 @main // Anotación que indica el punto de entrada de la aplicación
-
-// Define la estructura MyApp que conforma el protocolo App
 struct MyApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate // Adapta AppDelegate para usarlo con SwiftUI
     @StateObject var userInterfaceMode = UserInterfaceMode() // Crea una instancia de UserInterfaceMode como un objeto de estado
     @StateObject var sessionStore = SessionStore() // Crea una instancia de SessionStore como un objeto de estado
-    
+
     // Define el cuerpo de la escena de la aplicación
     var body: some Scene {
         // Define el grupo de ventanas para la aplicación

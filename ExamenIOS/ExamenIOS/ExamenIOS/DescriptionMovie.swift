@@ -17,10 +17,18 @@ struct DescriptionMovie: View {
                 ZStack(alignment: .bottom) {
                     AsyncImage(url: URL(string: movie.poster)) { phase in
                         switch phase {
+                        case .empty:
+                            Color.gray // Placeholder mientras la imagen carga
+                                .aspectRatio(contentMode: .fill)
+                                .clipped()
                         case .success(let image):
                             image.resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .clipped()
+                        case .failure:
+                            Image(systemName: "photo")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
                         @unknown default:
                             ProgressView()
                                 .aspectRatio(contentMode: .fill)
@@ -33,7 +41,6 @@ struct DescriptionMovie: View {
                 }
                 .background(Color.black.opacity(0.1))
 
-              
                 HStack {
                     Text(movie.title)
                         .font(.title2)

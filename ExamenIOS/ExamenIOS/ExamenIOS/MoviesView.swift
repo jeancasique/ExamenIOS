@@ -10,7 +10,7 @@ struct MoviesView: View {
     @StateObject private var userData = UserData() // Datos del usuario
     @State private var isMenuOpen = false // Estado para controlar el menú
     @EnvironmentObject var session: SessionStore
-
+    
     var body: some View {
         ZStack(alignment: .leading) { // Envolver el contenido en un ZStack
             NavigationView {
@@ -58,13 +58,13 @@ struct MoviesView: View {
                             isMenuOpen.toggle() // Cerrar el menú al tocar fuera de él
                         }
                     }
-
+                
                 MenuView(isOpen: $isMenuOpen)
                     .transition(.move(edge: .leading)) // Animación de transición
             }
         }
     }
-
+    
     // Función para cargar películas basadas en un término de búsqueda
     private func loadMovies(searchTerm: String) {
         let term = searchTerm.isEmpty ? "Spider-Man" : searchTerm // Usar "Spider-Man" si el término de búsqueda está vacío
@@ -74,12 +74,12 @@ struct MoviesView: View {
             }
         }
     }
-
+    
     // Función para actualizar películas según el texto del buscador
     private func updateMoviesBasedOnSearchText() {
         loadMovies(searchTerm: searchText)
     }
-
+    
     // Función para cargar datos del usuario desde Firestore
     private func loadUserData() {
         guard let userId = Auth.auth().currentUser?.uid else { return } // Obtener el ID del usuario
@@ -88,7 +88,15 @@ struct MoviesView: View {
             if let document = document, document.exists {
                 let data = document.data()
                 DispatchQueue.main.async {
-                    self.userData.firstName = data?["firstName"] as? String ?? "" // Actualizar nombre del usuario
+                    self.userData.email = data?["email"] as? String ?? ""
+                    let fullName = data?["name"] as? String ?? ""
+                    let nameComponents = fullName.split(separator: " ")
+                    if nameComponents.count > 1 {
+                        self.userData.firstName = String(nameComponents[0])
+                        self.userData.lastName = nameComponents.dropFirst().joined(separator: " ")
+                    } else {
+                        self.userData.firstName = fullName
+                    }
                     if let urlString = data?["profileImageURL"] as? String {
                         self.loadProfileImage(from: urlString) // Cargar imagen de perfil
                     }
@@ -96,8 +104,7 @@ struct MoviesView: View {
             }
         }
     }
-
-    // Función para cargar la imagen de perfil desde una URL
+    
     private func loadProfileImage(from urlString: String) {
         guard let url = URL(string: urlString) else { return }
         URLSession.shared.dataTask(with: url) { data, _, error in
@@ -108,7 +115,6 @@ struct MoviesView: View {
         }.resume()
     }
 }
-
 // Vista para mostrar los detalles de una película
 struct MovieDetailView: View {
     let movieID: String // ID de la película

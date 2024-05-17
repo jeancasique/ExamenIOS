@@ -17,7 +17,6 @@ class UserData: ObservableObject {
     @Published var profileImage: UIImage?
     @Published var profileImageURL: String? = nil // Cambiar a opcional
 }
-
 struct PerfilView: View {
     @StateObject private var userData = UserData()
     @State private var editingField: String? = nil
@@ -463,4 +462,3 @@ extension UIImage {
         return UIGraphicsGetImageFromCurrentImageContext() ?? self
     }
 }
-

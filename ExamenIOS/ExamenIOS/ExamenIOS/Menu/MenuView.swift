@@ -136,7 +136,6 @@ struct MenuView: View {
 
     // Función para cerrar sesión y navegar a la pantalla de LoginView
     func logout() {
-        
         session.signOut()
         self.isLoggedOut = true // Actualizar estado de logout para redirigir a LoginView
     }

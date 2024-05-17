@@ -1,5 +1,7 @@
 import FirebaseAuth
 import FirebaseFirestore
+import FacebookCore
+import FacebookLogin
 
 // Define la clase SessionStore que implementa ObservableObject para que pueda ser observada por las vistas
 class SessionStore: ObservableObject {
@@ -7,10 +9,12 @@ class SessionStore: ObservableObject {
     @Published var isLoggedIn: Bool = false // Publica la variable isLoggedIn para notificar los cambios a las vistas
     @Published var userData: UserData? = UserData() // Publica la variable userData para notificar los cambios a las vistas
 
+    init() {
+        self.listen() // Inicia la escucha de cambios en el estado de autenticación
+    }
     
     // Función para escuchar los cambios en el estado de autenticación
     func listen() {
-        
         Auth.auth().addStateDidChangeListener { [weak self] (auth, user) in // Añade un listener para cambios en el estado de autenticación
             if let user = user { // Si hay un usuario autenticado
                 self?.isLoggedIn = true // Establece isLoggedIn a true
@@ -35,7 +39,6 @@ class SessionStore: ObservableObject {
     
     // Función privada para cargar los datos del usuario desde Firestore
     private func loadUserData(userId: String) {
-        
         let db = Firestore.firestore() // Obtiene una referencia a la base de datos de Firestore
         db.collection("users").document(userId).getDocument { (document, error) in // Obtiene el documento del usuario desde la colección "users"
             if let document = document, document.exists { // Si el documento existe
