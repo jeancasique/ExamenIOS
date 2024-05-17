@@ -99,6 +99,9 @@ struct DescriptionMovie: View {
         } else {
             DataManager.shared.addFavorite(movieId: movie.imdbID, movieTitle: movie.title)
             print("La película es favorita")
+
+            // Programar una notificación local
+            NotificationManager.shared.scheduleLocalNotification(movieTitle: movie.title)
         }
         isFavorite.toggle() // Actualiza el estado de isFavorite para reflejar el cambio
     }

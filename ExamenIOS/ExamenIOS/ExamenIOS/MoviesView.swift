@@ -150,7 +150,7 @@ struct MovieCard: View {
             
             VStack {
                 Text(movie.title)
-                    .font(.headline)
+                    .font(.title)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                     .frame(width: 160, alignment: .leading)

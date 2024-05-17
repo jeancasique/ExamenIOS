@@ -22,6 +22,8 @@ class DataManager {
                 print("Error adding favorite movie to Firestore: \(error)")
             } else {
                 print("Favorite movie added to Firestore")
+                // Programar notificación después de agregar a Firestore
+                NotificationManager.shared.scheduleLocalNotification(movieTitle: movieTitle)
             }
         }
     }

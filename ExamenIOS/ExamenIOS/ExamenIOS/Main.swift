@@ -2,11 +2,34 @@ import SwiftUI
 import FirebaseCore
 import Firebase
 import UIKit
+import UserNotifications
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
+        
+        // Configurar notificaciones locales
+        configureUserNotifications()
+        
         return true
+    }
+    
+    func configureUserNotifications() {
+        NotificationManager.shared.requestAuthorization()
+    }
+
+    // Manejar la recepción de notificaciones en primer plano
+    @available(iOS 10, *)
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.alert, .sound])
+    }
+
+    // Manejar la respuesta a notificaciones
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        let userInfo = response.notification.request.content.userInfo
+        print(userInfo) // Print full message.
+        completionHandler()
     }
 }
 
@@ -34,8 +57,6 @@ struct MyApp: App {
                                 userInterfaceMode.isDarkModeEnabled = isDarkModeEnabled
                             }
                         }
-                    }
-                    .onAppear {
                         sessionStore.listen()
                     }
             } else {
@@ -50,8 +71,6 @@ struct MyApp: App {
                                 userInterfaceMode.isDarkModeEnabled = isDarkModeEnabled
                             }
                         }
-                    }
-                    .onAppear {
                         sessionStore.listen()
                     }
             }
