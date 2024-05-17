@@ -38,6 +38,9 @@
 		6C6320BF2BEB93A800A13986 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 6C6320BE2BEB93A800A13986 /* GoogleService-Info.plist */; };
 		6C6320C12BEB9F7C00A13986 /* PefilView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6320C02BEB9F7C00A13986 /* PefilView.swift */; };
 		6C6320C32BEBA13900A13986 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6320C22BEBA13900A13986 /* Image.swift */; };
+		6CCFA8282BF74A4B0084772E /* LoginApple.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CCFA8272BF74A4B0084772E /* LoginApple.swift */; };
+		6CCFA82A2BF74A580084772E /* LoginGoogle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CCFA8292BF74A580084772E /* LoginGoogle.swift */; };
+		6CCFA82C2BF74A630084772E /* FaceID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CCFA82B2BF74A630084772E /* FaceID.swift */; };
 		6CD4C9042BEE3E7100808292 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CD4C9032BEE3E7100808292 /* DataManager.swift */; };
 		6CF6E9E22BF365AE001A4DC0 /* PerfilData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF6E9E12BF365AE001A4DC0 /* PerfilData.swift */; };
 		6CF6E9E62BF369AA001A4DC0 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 6CF6E9E52BF369AA001A4DC0 /* Kingfisher */; };
@@ -88,6 +91,9 @@
 		6C6320BE2BEB93A800A13986 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		6C6320C02BEB9F7C00A13986 /* PefilView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PefilView.swift; sourceTree = "<group>"; };
 		6C6320C22BEBA13900A13986 /* Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
+		6CCFA8272BF74A4B0084772E /* LoginApple.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginApple.swift; sourceTree = "<group>"; };
+		6CCFA8292BF74A580084772E /* LoginGoogle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginGoogle.swift; sourceTree = "<group>"; };
+		6CCFA82B2BF74A630084772E /* FaceID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceID.swift; sourceTree = "<group>"; };
 		6CD4C9032BEE3E7100808292 /* DataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
 		6CF6E9E12BF365AE001A4DC0 /* PerfilData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerfilData.swift; sourceTree = "<group>"; };
 		6CF6E9E82BF38058001A4DC0 /* MenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuView.swift; sourceTree = "<group>"; };
@@ -168,10 +174,10 @@
 			children = (
 				6C6320B52BEB8CA500A13986 /* Info.plist */,
 				6C63206E2BEB729600A13986 /* Main.swift */,
-				6C6320702BEB729600A13986 /* LoginView.swift */,
+				6CCFA8262BF74A2A0084772E /* Login */,
 				6CF6E9E72BF36A84001A4DC0 /* Registro */,
-				6C6320BA2BEB909F00A13986 /* PasswordResetView.swift */,
 				6C6320982BEB72D400A13986 /* MoviesView.swift */,
+				698CD2862BF5315D0067794A /* Menu */,
 				6CF6E9E32BF36658001A4DC0 /* Perfil */,
 				6C63209F2BEB846E00A13986 /* DescriptionMovie.swift */,
 				6C63209A2BEB789C00A13986 /* Data */,
@@ -219,13 +225,24 @@
 			path = Data;
 			sourceTree = "<group>";
 		};
+		6CCFA8262BF74A2A0084772E /* Login */ = {
+			isa = PBXGroup;
+			children = (
+				6C6320702BEB729600A13986 /* LoginView.swift */,
+				6CCFA8272BF74A4B0084772E /* LoginApple.swift */,
+				6CCFA8292BF74A580084772E /* LoginGoogle.swift */,
+				6CCFA82B2BF74A630084772E /* FaceID.swift */,
+				6C6320BA2BEB909F00A13986 /* PasswordResetView.swift */,
+			);
+			path = Login;
+			sourceTree = "<group>";
+		};
 		6CF6E9E32BF36658001A4DC0 /* Perfil */ = {
 			isa = PBXGroup;
 			children = (
 				6C6320C02BEB9F7C00A13986 /* PefilView.swift */,
 				6CF6E9E12BF365AE001A4DC0 /* PerfilData.swift */,
 				6C6320C22BEBA13900A13986 /* Image.swift */,
-				698CD2862BF5315D0067794A /* Menu */,
 			);
 			path = Perfil;
 			sourceTree = "<group>";
@@ -395,12 +412,15 @@
 				6C63206F2BEB729600A13986 /* Main.swift in Sources */,
 				6C6320BD2BEB90BC00A13986 /* KeychainService.swift in Sources */,
 				6CF6E9E92BF38058001A4DC0 /* MenuView.swift in Sources */,
+				6CCFA8282BF74A4B0084772E /* LoginApple.swift in Sources */,
 				6CF6E9EB2BF3807A001A4DC0 /* FavoritesMovies.swift in Sources */,
 				6C63209C2BEB78AF00A13986 /* Movies.swift in Sources */,
 				699DA3ED2BF3B53200CAFF4C /* SessionStore.swift in Sources */,
 				6C6320B72BEB8D5300A13986 /* Registrationview.swift in Sources */,
 				6CF6E9E22BF365AE001A4DC0 /* PerfilData.swift in Sources */,
 				6CF6E9ED2BF38094001A4DC0 /* Ajustes.swift in Sources */,
+				6CCFA82C2BF74A630084772E /* FaceID.swift in Sources */,
+				6CCFA82A2BF74A580084772E /* LoginGoogle.swift in Sources */,
 				6C6320992BEB72D400A13986 /* MoviesView.swift in Sources */,
 				6C6320BB2BEB909F00A13986 /* PasswordResetView.swift in Sources */,
 				6C63209E2BEB78C500A13986 /* MovieService.swift in Sources */,

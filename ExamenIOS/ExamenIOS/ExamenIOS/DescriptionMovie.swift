@@ -23,7 +23,7 @@ struct DescriptionMovie: View {
                                 .clipped()
                         @unknown default:
                             ProgressView()
-                                .frame(width: 400, height: 400)
+                                .aspectRatio(contentMode: .fill)
                         }
                     }
                     .edgesIgnoringSafeArea(.top)
@@ -33,7 +33,7 @@ struct DescriptionMovie: View {
                 }
                 .background(Color.black.opacity(0.1))
 
-                // HStack para el título y el botón de favoritos
+              
                 HStack {
                     Text(movie.title)
                         .font(.title2)
