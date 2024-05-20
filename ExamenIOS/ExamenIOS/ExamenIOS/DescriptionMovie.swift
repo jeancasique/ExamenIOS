@@ -1,11 +1,11 @@
 import SwiftUI
+import Kingfisher
 
 struct DescriptionMovie: View {
     var movie: Movie
-    @State private var isFavorite: Bool = false // Estado inicial no favorito
+    @State private var isFavorite: Bool = false
     @EnvironmentObject var session: SessionStore
 
-    // Inicialización de la vista
     init(movie: Movie) {
         self.movie = movie
     }
@@ -13,31 +13,24 @@ struct DescriptionMovie: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
-                // Imagen de la película con un gradiente en la parte inferior
                 ZStack(alignment: .bottom) {
-                    AsyncImage(url: URL(string: movie.poster)) { phase in
-                        switch phase {
-                        case .empty:
-                            ProgressView() // Mostrar ProgressView mientras la imagen carga
-                                .aspectRatio(contentMode: .fill)
-                                .clipped()
-                        case .success(let image):
-                            image.resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .clipped()
-                        case .failure:
-                            Image(systemName: "photo")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        @unknown default:
+                    // Espacio reservado para la imagen
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(height: 400)
+                    
+                    KFImage(URL(string: movie.poster))
+                        .placeholder {
                             ProgressView()
-                                .aspectRatio(contentMode: .fill)
                         }
-                    }
-                    .edgesIgnoringSafeArea(.top)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 600)
+                        .clipped()
+                        .edgesIgnoringSafeArea(.top)
 
-                    // Gradiente que se difumina hacia el final de la imagen
                     LinearGradient(gradient: Gradient(colors: [.clear, .black]), startPoint: .center, endPoint: .bottom)
+                        .frame(height: 600)
                 }
                 .background(Color.black.opacity(0.1))
 
@@ -46,27 +39,24 @@ struct DescriptionMovie: View {
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
-                        .padding(.horizontal, 16) // Padding izquierdo de 16dp
+                        .padding(.horizontal, 16)
 
-                    Spacer() // Empuja el botón hacia la derecha
+                    Spacer()
 
-                    // Botón para marcar como favorito
                     Button(action: {
                         toggleFavorite()
-                        print("Is favorite now: \(isFavorite)") // Depuración
                     }) {
                         Image(systemName: isFavorite ? "bookmark.fill" : "bookmark")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 40, height: 25) // Ajusta el tamaño del marco aquí
+                            .frame(width: 40, height: 25)
                             .foregroundColor(.red)
                             .padding()
                             .padding(.trailing, 1)
                     }
                 }
-                .padding(.top, -40) // Mover el HStack hacia arriba para que esté justo en el borde de la imagen y el gradiente
+                .padding(.top, -40)
 
-                // Información adicional de la película
                 Group {
                     if let rating = Double(movie.imdbRating ?? "0") {
                         StarRatingView(rating: rating)
@@ -79,38 +69,34 @@ struct DescriptionMovie: View {
                 }
                 .font(.subheadline)
                 .foregroundColor(.white)
-                .padding(.horizontal, 16) // Padding izquierdo de 16dp
+                .padding(.horizontal, 16)
 
                 Text(movie.plot ?? "No synopsis available.")
                     .font(.body)
                     .foregroundColor(.white)
-                    .padding(.horizontal, 16) // Padding izquierdo de 16dp
+                    .padding(.horizontal, 16)
             }
         }
-        .background(Color.black) // Fondo negro
+        .background(Color.black)
         .navigationBarTitleDisplayMode(.inline)
         .edgesIgnoringSafeArea(.top)
         .onAppear {
-            // Verificar si la película es favorita al aparecer la vista
             DataManager.shared.isFavorite(movieId: movie.imdbID) { isFavorite in
-                self.isFavorite = isFavorite
+                DispatchQueue.main.async {
+                    self.isFavorite = isFavorite
+                }
             }
         }
     }
 
-    // Función para alternar el estado de favorito
     private func toggleFavorite() {
         if isFavorite {
             DataManager.shared.removeFavorite(movieId: movie.imdbID)
-            print("La película no es favorita")
         } else {
             DataManager.shared.addFavorite(movieId: movie.imdbID, movieTitle: movie.title)
-            print("La película es favorita")
-
-            // Programar una notificación local
             NotificationManager.shared.scheduleLocalNotification(movieTitle: movie.title)
         }
-        isFavorite.toggle() // Actualiza el estado de isFavorite para reflejar el cambio
+        isFavorite.toggle()
     }
 }
 
@@ -143,13 +129,14 @@ struct DescriptionMovie_Previews: PreviewProvider {
             production: "Sony Pictures",
             website: "N/A"
         ))
-        .preferredColorScheme(.dark) // Muestra el preview en modo oscuro si deseas
+        .preferredColorScheme(.dark)
+        .environmentObject(SessionStore())
     }
 }
 
 // Vista para mostrar la calificación con estrellas
 struct StarRatingView: View {
-    var rating: Double // Rating out of 10
+    var rating: Double
 
     private func starType(index: Int) -> String {
         let filledStars = Int(rating / 2)

@@ -42,8 +42,8 @@ struct FavoritesMovies: View {
                     }
                 }
                 .onAppear {
-                    loadFavoriteMovies() // Cargar películas favoritas al aparecer la vista
                     loadUserData() // Cargar datos del usuario
+                    loadFavoriteMovies() // Cargar películas favoritas al aparecer la vista
                 }
                 .navigationBarBackButtonHidden(true) // Ocultar botón de retroceso
             }
@@ -81,15 +81,22 @@ struct FavoritesMovies: View {
 
     // Función para obtener detalles de las películas por sus IDs
     private func fetchMoviesDetails(movieIds: [String]) {
-        favoriteMovies.removeAll()
+        // Use a group to update the state once
+        let dispatchGroup = DispatchGroup()
+        var fetchedMovies: [Movie] = []
+        
         for movieId in movieIds {
+            dispatchGroup.enter()
             movieService.fetchMovieDetails(imdbID: movieId) { movie in
                 if let movie = movie {
-                    DispatchQueue.main.async {
-                        self.favoriteMovies.append(movie) // Añadir película a la lista de favoritas
-                    }
+                    fetchedMovies.append(movie)
                 }
+                dispatchGroup.leave()
             }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            self.favoriteMovies = fetchedMovies // Update state once
         }
     }
 
@@ -138,3 +145,4 @@ struct FavoritesMovies_Previews: PreviewProvider {
             .environmentObject(SessionStore()) // Proporcionar una instancia de SessionStore para la previsualización
     }
 }
+
