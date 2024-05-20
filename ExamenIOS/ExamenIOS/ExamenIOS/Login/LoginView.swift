@@ -4,7 +4,6 @@ import FacebookCore
 import FacebookLogin
 
 struct LoginView: View {
-    
     @EnvironmentObject var session: SessionStore
     @State private var email = ""
     @State private var password = ""
@@ -18,7 +17,7 @@ struct LoginView: View {
     private let appleSignInManager = AppleSignInManager()
     private let faceIDManager = FaceIDManager()
     @StateObject private var facebookLoginManager = LoginFacebook()
-    
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -38,6 +37,7 @@ struct LoginView: View {
                     }
                 }
                 .onAppear {
+                    facebookLoginManager.setSession(session: session) // Set the session here
                     facebookLoginManager.checkExistingToken()
                     if facebookLoginManager.isUserLoggedIn {
                         session.isLoggedIn = true
@@ -247,9 +247,11 @@ struct LoginView_Previews: PreviewProvider {
         Group {
             LoginView()
                 .preferredColorScheme(.dark)
-            
+                .environmentObject(SessionStore())
             LoginView()
                 .preferredColorScheme(.light)
+                .environmentObject(SessionStore())
+            
         }
     }
 }

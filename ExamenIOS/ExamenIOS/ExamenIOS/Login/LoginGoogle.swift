@@ -52,35 +52,26 @@ class GoogleSignInManager: NSObject {
                     do {
                         let document = try await docRef.getDocument()
                         if !document.exists {
-                            let imageUrl = googleUser.profile!.imageURL(withDimension: 200)?.absoluteString ?? ""
+                            let firstName = googleUser.profile?.givenName ?? ""
+                            let lastName = googleUser.profile?.familyName ?? ""
+                            let profileImageURL = googleUser.profile?.imageURL(withDimension: 200)?.absoluteString ?? ""
                             
-                            if let imageUrl = URL(string: imageUrl), googleUser.profile!.hasImage {
-                                URLSession.shared.dataTask(with: imageUrl) { data, response, error in
-                                    guard let data = data, error == nil else {
-                                        print("Fallo al descargar los datos de la imagen")
-                                        return
+                            let userData: [String: Any] = [
+                                "email": user.email ?? "",
+                                "firstName": firstName,
+                                "lastName": lastName,
+                                "profileImageURL": profileImageURL
+                            ]
+                            
+                            db.collection("users").document(user.uid).setData(userData) { error in
+                                if let error = error {
+                                    print("Error al guardar los datos del usuario: \(error.localizedDescription)")
+                                } else {
+                                    print("Datos del usuario guardados correctamente.")
+                                    DispatchQueue.main.async {
+                                        completion(true)
                                     }
-                                    let image = UIImage(data: data)
-                                    let userData: [String: Any] = [
-                                        "email": user.email ?? "",
-                                        "firstName": user.displayName?.components(separatedBy: " ").first ?? "",
-                                        "lastName": user.displayName?.components(separatedBy: " ").last ?? "",
-                                        "gender": "",
-                                        "birthDate": "",
-                                        "profileImage": image?.jpegData(compressionQuality: 0.8)?.base64EncodedString() ?? ""
-                                    ]
-                                    
-                                    db.collection("users").document(user.uid).setData(userData) { error in
-                                        if let error = error {
-                                            print("Error al guardar los datos del usuario: \(error.localizedDescription)")
-                                        } else {
-                                            print("Datos del usuario guardados correctamente.")
-                                            DispatchQueue.main.async {
-                                                completion(true)
-                                            }
-                                        }
-                                    }
-                                }.resume()
+                                }
                             }
                         } else {
                             DispatchQueue.main.async {
@@ -96,3 +87,4 @@ class GoogleSignInManager: NSObject {
         }
     }
 }
+

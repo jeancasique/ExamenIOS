@@ -18,7 +18,7 @@ struct DescriptionMovie: View {
                     AsyncImage(url: URL(string: movie.poster)) { phase in
                         switch phase {
                         case .empty:
-                            Color.gray // Placeholder mientras la imagen carga
+                            ProgressView() // Mostrar ProgressView mientras la imagen carga
                                 .aspectRatio(contentMode: .fill)
                                 .clipped()
                         case .success(let image):

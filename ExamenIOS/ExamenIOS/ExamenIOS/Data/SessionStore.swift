@@ -1,54 +1,72 @@
 import FirebaseAuth
 import FirebaseFirestore
-import FacebookCore
 import FacebookLogin
 
-// Define la clase SessionStore que implementa ObservableObject para que pueda ser observada por las vistas
 class SessionStore: ObservableObject {
-    
-    @Published var isLoggedIn: Bool = false // Publica la variable isLoggedIn para notificar los cambios a las vistas
-    @Published var userData: UserData? = UserData() // Publica la variable userData para notificar los cambios a las vistas
+    @Published var isLoggedIn: Bool = false
+    @Published var userData: UserData? = UserData()
 
-    init() {
-        self.listen() // Inicia la escucha de cambios en el estado de autenticación
-    }
-    
-    // Función para escuchar los cambios en el estado de autenticación
+    // Escuchar cambios de autenticación
     func listen() {
-        Auth.auth().addStateDidChangeListener { [weak self] (auth, user) in // Añade un listener para cambios en el estado de autenticación
-            if let user = user { // Si hay un usuario autenticado
-                self?.isLoggedIn = true // Establece isLoggedIn a true
-                self?.loadUserData(userId: user.uid) // Carga los datos del usuario
-            } else { // Si no hay un usuario autenticado
-                self?.isLoggedIn = false // Establece isLoggedIn a false
-                self?.userData = UserData() // Establece userData a una nueva instancia vacía de UserData
+        Auth.auth().addStateDidChangeListener { [weak self] auth, user in
+            if let user = user {
+                self?.isLoggedIn = true
+                self?.loadUserData(userId: user.uid)
+            } else {
+                self?.isLoggedIn = false
+                self?.userData = UserData()
             }
         }
     }
-    
+
     // Función para cerrar sesión
     func signOut() {
         do {
-            try Auth.auth().signOut() // Intenta cerrar sesión
-            self.isLoggedIn = false // Establece isLoggedIn a false
-            self.userData = UserData() // Establece userData a una nueva instancia vacía de UserData
+            try Auth.auth().signOut()
+            let loginManager = LoginManager()
+            loginManager.logOut()
+            self.isLoggedIn = false
+            self.userData = UserData()
         } catch {
-            print("Error signing out: \(error.localizedDescription)") // Imprime un mensaje de error si ocurre un problema al cerrar sesión
+            print("Error signing out: \(error.localizedDescription)")
         }
     }
-    
-    // Función privada para cargar los datos del usuario desde Firestore
-    private func loadUserData(userId: String) {
-        let db = Firestore.firestore() // Obtiene una referencia a la base de datos de Firestore
-        db.collection("users").document(userId).getDocument { (document, error) in // Obtiene el documento del usuario desde la colección "users"
-            if let document = document, document.exists { // Si el documento existe
-                let data = document.data() // Obtiene los datos del documento
-                DispatchQueue.main.async { // Actualiza la interfaz de usuario en el hilo principal
-                    self.userData?.firstName = data?["firstName"] as? String ?? "" // Asigna el primer nombre del usuario
-                    self.userData?.profileImageURL = data?["profileImageURL"] as? String ?? "" // Asigna la URL de la imagen de perfil del usuario
+
+    // Función para cargar datos del usuario desde Firestore
+    func loadUserData(userId: String) {
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).getDocument { document, error in
+            if let document = document, document.exists {
+                let data = document.data()
+                DispatchQueue.main.async {
+                    self.userData?.email = data?["email"] as? String ?? ""
+                    self.userData?.firstName = data?["firstName"] as? String ?? ""
+                    self.userData?.profileImageURL = data?["profileImageURL"] as? String ?? ""
+                    self.loadProfileImage(from: self.userData?.profileImageURL ?? "")
                 }
             }
         }
     }
+
+    // Función para cargar imagen de perfil desde una URL
+    private func loadProfileImage(from urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            guard let data = data, error == nil else { return }
+            DispatchQueue.main.async {
+                self.userData?.profileImage = UIImage(data: data) // Actualizar la imagen de perfil
+            }
+        }.resume()
+    }
+    func updateUserDataFromFacebook(firstName: String, lastName: String, profileImageURL: String) {
+        DispatchQueue.main.async {
+            self.userData?.firstName = firstName
+            self.userData?.lastName = lastName
+            self.userData?.profileImageURL = profileImageURL
+            self.loadProfileImage(from: profileImageURL)
+        }
+    }
+
+
 }
 

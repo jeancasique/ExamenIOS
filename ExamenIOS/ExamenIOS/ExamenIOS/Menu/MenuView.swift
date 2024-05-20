@@ -25,6 +25,7 @@ struct MenuView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.primary) // Cambia el color para ser compatible con el modo oscuro
                         .lineLimit(1)
+
                     
                     Text("UX/UI Designer") // Descripción del usuario
                         .foregroundColor(.gray)
@@ -97,7 +98,7 @@ struct MenuView: View {
             }
         }
         .fullScreenCover(isPresented: $isLoggedOut) {
-            LoginView() // Vista de Login
+            RootView()
                 .environmentObject(session)
         }
     }
@@ -137,7 +138,7 @@ struct MenuView: View {
     // Función para cerrar sesión y navegar a la pantalla de LoginView
     func logout() {
         session.signOut()
-        self.isLoggedOut = true // Actualizar estado de logout para redirigir a LoginView
+        self.isLoggedOut = true
     }
 }
 

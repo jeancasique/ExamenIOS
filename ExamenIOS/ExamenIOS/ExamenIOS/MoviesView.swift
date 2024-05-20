@@ -7,10 +7,10 @@ struct MoviesView: View {
     @State private var searchText = "" // Estado para el texto de búsqueda
     @State private var movies: [Movie] = [] // Estado para almacenar las películas
     @StateObject private var movieService = MovieService() // Servicio para obtener películas
-    @StateObject private var userData = UserData() // Datos del usuario
+    @EnvironmentObject var session: SessionStore // Estado de sesión
     @State private var isMenuOpen = false // Estado para controlar el menú
-    @EnvironmentObject var session: SessionStore
-    
+    @State private var selectedMovieID: String? // ID de la película seleccionada
+
     var body: some View {
         ZStack(alignment: .leading) { // Envolver el contenido en un ZStack
             NavigationView {
@@ -18,7 +18,9 @@ struct MoviesView: View {
                     // Disposición en una cuadrícula de las tarjetas de películas
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 160)), GridItem(.adaptive(minimum: 160))], spacing: 10) {
                         ForEach(movies, id: \.imdbID) { movie in
-                            NavigationLink(destination: MovieDetailView(movieID: movie.imdbID)) {
+                            Button(action: {
+                                selectedMovieID = movie.imdbID
+                            }) {
                                 MovieCard(movie: movie)
                                     .frame(width: 160, height: 240) // Ajustar tamaño de las tarjetas
                             }
@@ -38,18 +40,28 @@ struct MoviesView: View {
                                 isMenuOpen.toggle() // Abrir/cerrar el menú
                             }
                         }) {
-                            ProfileIcon(userData: userData) // Icono de perfil del usuario
+                            ProfileIcon(userData: session.userData ?? UserData()) // Icono de perfil del usuario
                         }
                     }
                 }
                 .onAppear {
                     updateMoviesBasedOnSearchText() // Actualizar películas según el texto del buscador
-                    loadUserData() // Cargar datos del usuario
                 }
                 .navigationBarBackButtonHidden(true) // Ocultar botón de retroceso
+                .background(
+                    NavigationLink(
+                        destination: selectedMovieID != nil ? AnyView(MovieDetailView(movieID: selectedMovieID!)) : AnyView(EmptyView()),
+                        isActive: Binding<Bool>(
+                            get: { selectedMovieID != nil },
+                            set: { if !$0 { selectedMovieID = nil } }
+                        )
+                    ) {
+                        EmptyView()
+                    }
+                )
             }
             .navigationViewStyle(StackNavigationViewStyle()) // Asegurar el estilo de navegación para ocultar el botón de retroceso
-            
+
             if isMenuOpen {
                 Color.black.opacity(0.3)
                     .edgesIgnoringSafeArea(.all)
@@ -58,13 +70,13 @@ struct MoviesView: View {
                             isMenuOpen.toggle() // Cerrar el menú al tocar fuera de él
                         }
                     }
-                
+
                 MenuView(isOpen: $isMenuOpen)
                     .transition(.move(edge: .leading)) // Animación de transición
             }
         }
     }
-    
+
     // Función para cargar películas basadas en un término de búsqueda
     private func loadMovies(searchTerm: String) {
         let term = searchTerm.isEmpty ? "Spider-Man" : searchTerm // Usar "Spider-Man" si el término de búsqueda está vacío
@@ -74,48 +86,48 @@ struct MoviesView: View {
             }
         }
     }
-    
+
     // Función para actualizar películas según el texto del buscador
     private func updateMoviesBasedOnSearchText() {
         loadMovies(searchTerm: searchText)
     }
+}
+
+// Vista para mostrar el icono de perfil del usuario
+struct ProfileIcon: View {
+    @ObservedObject var userData: UserData // Datos del usuario
     
-    // Función para cargar datos del usuario desde Firestore
-    private func loadUserData() {
-        guard let userId = Auth.auth().currentUser?.uid else { return } // Obtener el ID del usuario
-        let db = Firestore.firestore()
-        db.collection("users").document(userId).getDocument { (document, error) in
-            if let document = document, document.exists {
-                let data = document.data()
-                DispatchQueue.main.async {
-                    self.userData.email = data?["email"] as? String ?? ""
-                    let fullName = data?["name"] as? String ?? ""
-                    let nameComponents = fullName.split(separator: " ")
-                    if nameComponents.count > 1 {
-                        self.userData.firstName = String(nameComponents[0])
-                        self.userData.lastName = nameComponents.dropFirst().joined(separator: " ")
-                    } else {
-                        self.userData.firstName = fullName
-                    }
-                    if let urlString = data?["profileImageURL"] as? String {
-                        self.loadProfileImage(from: urlString) // Cargar imagen de perfil
-                    }
-                }
+    var body: some View {
+        HStack(spacing: 8) {
+            if let profileImage = userData.profileImage {
+                Image(uiImage: profileImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 35, height: 35)
+                    .clipShape(Circle())
+            } else {
+                Image(systemName: "person.circle")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 35, height: 35)
+                    .foregroundColor(.gray)
+                    .clipShape(Circle())
+            }
+            VStack(alignment: .leading) {
+                Text(userData.firstName.isEmpty ? "Hola, usuario!" : "Hola \(userData.firstName)!")
+                    .foregroundColor(.white)
+                    .font(.system(size: 18))
+
+                Text("Encuentra tu película")
+                    .font(.subheadline)
+                    .foregroundStyle(.gray)
+                    .italic(true)
             }
         }
     }
-    
-    private func loadProfileImage(from urlString: String) {
-        guard let url = URL(string: urlString) else { return }
-        URLSession.shared.dataTask(with: url) { data, _, error in
-            guard let data = data, error == nil else { return }
-            DispatchQueue.main.async {
-                self.userData.profileImage = UIImage(data: data) // Actualizar la imagen de perfil
-            }
-        }.resume()
-    }
 }
-// Vista para mostrar los detalles de una película
+
+// Definiciones de MovieDetailView y MovieCard
 struct MovieDetailView: View {
     let movieID: String // ID de la película
     @State private var movie: Movie? // Estado para almacenar la película
@@ -126,7 +138,7 @@ struct MovieDetailView: View {
             if let movie = movie {
                 DescriptionMovie(movie: movie) // Mostrar detalles de la película
             } else {
-                Text("Loading...")
+                ProgressView() // Mostrar indicador de carga mientras se obtienen los detalles
                     .onAppear {
                         movieService.fetchMovieDetails(imdbID: movieID) { fetchedMovie in
                             self.movie = fetchedMovie // Actualizar la película cuando se obtengan los detalles
@@ -175,39 +187,6 @@ struct MovieCard: View {
         .cornerRadius(10)
         .shadow(radius: 5)
         .frame(width: 160, height: 240) // Tamaño fijo para toda la tarjeta
-    }
-}
-
-// Vista para mostrar el icono de perfil del usuario
-struct ProfileIcon: View {
-    @ObservedObject var userData: UserData // Datos del usuario
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            if let profileImage = userData.profileImage {
-                Image(uiImage: profileImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 35, height: 35)
-                    .clipShape(Circle())
-            } else {
-                Image(systemName: "person.circle")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 35, height: 35)
-                    .foregroundColor(.gray)
-                    .clipShape(Circle())
-            }
-            VStack(alignment: .leading) {
-                Text(userData.firstName.isEmpty ? "Hola, usuario!" : "Hola \(userData.firstName)!")
-                    .foregroundColor(.white)
-                    .font(.system(size: 18))
-                Text("Encuentra tu película favorita")
-                    .font(.subheadline)
-                    .foregroundStyle(.gray)
-                    .italic(true)
-            }
-        }
     }
 }
 

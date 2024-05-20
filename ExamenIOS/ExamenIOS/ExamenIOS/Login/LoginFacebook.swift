@@ -7,8 +7,15 @@ import FirebaseFirestore
 class LoginFacebook: ObservableObject {
     @Published var isUserLoggedIn: Bool = false
 
-    init() {
+    private var session: SessionStore?
+
+    init(session: SessionStore? = nil) {
+        self.session = session
         checkExistingToken()
+    }
+
+    func setSession(session: SessionStore) {
+        self.session = session
     }
 
     func checkExistingToken() {
@@ -50,7 +57,6 @@ class LoginFacebook: ObservableObject {
             }
         }
     }
-
     func fetchFacebookUserData() {
         let connection = GraphRequestConnection()
         connection.add(GraphRequest(graphPath: "/me", parameters: ["fields": "id, email, name, picture.type(large)"])) { httpResponse, result, error in
@@ -61,21 +67,26 @@ class LoginFacebook: ObservableObject {
 
             guard let result = result as? [String: Any] else { return }
             let email = result["email"] as? String ?? ""
-            let name = result["name"] as? String ?? ""
+            let fullName = result["name"] as? String ?? ""
             let picture = (result["picture"] as? [String: Any])?["data"] as? [String: Any]
             let profileImageURL = picture?["url"] as? String ?? ""
 
-            self.saveUserDataToFirestore(email: email, name: name, profileImageURL: profileImageURL)
+            // Separar el nombre completo en firstName y lastName
+            let nameComponents = fullName.split(separator: " ")
+            let firstName = nameComponents.first.map(String.init) ?? ""
+            let lastName = nameComponents.dropFirst().joined(separator: " ")
+
+            self.saveUserDataToFirestore(email: email, firstName: firstName, lastName: lastName, profileImageURL: profileImageURL)
         }
         connection.start()
     }
-
-    func saveUserDataToFirestore(email: String, name: String, profileImageURL: String) {
+    func saveUserDataToFirestore(email: String, firstName: String, lastName: String, profileImageURL: String) {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         let db = Firestore.firestore()
         let userData: [String: Any] = [
             "email": email,
-            "name": name,
+            "firstName": firstName, // Guardar el primer nombre
+            "lastName": lastName, // Guardar el apellido
             "profileImageURL": profileImageURL
         ]
         db.collection("users").document(userId).setData(userData) { error in
@@ -83,9 +94,18 @@ class LoginFacebook: ObservableObject {
                 print("Error saving user data: \(error.localizedDescription)")
             } else {
                 print("User data saved successfully")
+                self.updateSessionStore(firstName: firstName, lastName: lastName, profileImageURL: profileImageURL)
             }
         }
     }
+
+
+    func updateSessionStore(firstName: String, lastName: String, profileImageURL: String) {
+        DispatchQueue.main.async {
+            self.session?.updateUserDataFromFacebook(firstName: firstName, lastName: lastName, profileImageURL: profileImageURL)
+        }
+    }
+
 
     func logout() {
         let loginManager = LoginManager()

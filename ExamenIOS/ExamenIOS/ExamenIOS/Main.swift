@@ -6,99 +6,71 @@ import UserNotifications
 import FacebookCore
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
-    
-    // Función que se llama cuando la aplicación ha terminado de lanzarse
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        FirebaseApp.configure() // Configura Firebase
-
-        // Configurar Facebook SDK
-        ApplicationDelegate.shared.application(
-            application,
-            didFinishLaunchingWithOptions: launchOptions
-        )
-        
-        // Configurar notificaciones locales
-        configureUserNotifications() // Llama a la función para configurar notificaciones de usuario
-        
-        return true // Retorna true indicando que la aplicación se lanzó correctamente
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        FirebaseApp.configure()
+        ApplicationDelegate.shared.application(application, didFinishLaunchingWithOptions: launchOptions)
+        configureUserNotifications()
+        return true
     }
 
-    // Función para manejar URL abiertos por la aplicación (necesario para Facebook SDK)
-    func application(
-        _ app: UIApplication,
-        open url: URL,
-        options: [UIApplication.OpenURLOptionsKey : Any] = [:]
-    ) -> Bool {
-        ApplicationDelegate.shared.application(
-            app,
-            open: url,
-            sourceApplication: options[UIApplication.OpenURLOptionsKey.sourceApplication] as? String,
-            annotation: options[UIApplication.OpenURLOptionsKey.annotation]
-        )
+    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        ApplicationDelegate.shared.application(app, open: url, sourceApplication: options[UIApplication.OpenURLOptionsKey.sourceApplication] as? String, annotation: options[UIApplication.OpenURLOptionsKey.annotation])
     }
 
-    // Función para configurar las notificaciones de usuario
     func configureUserNotifications() {
-        NotificationManager.shared.requestAuthorization() // Solicita autorización para enviar notificaciones
+        NotificationManager.shared.requestAuthorization()
     }
 
-    // Manejar la recepción de notificaciones en primer plano
-    @available(iOS 10, *) // Indica que esta función está disponible en iOS 10 o superior
+    @available(iOS 10, *)
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.alert, .sound]) // Muestra una alerta y reproduce un sonido cuando se recibe una notificación en primer plano
+        completionHandler([.alert, .sound])
     }
 
-    // Manejar la respuesta a notificaciones
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        let userInfo = response.notification.request.content.userInfo // Obtiene la información de la notificación
-        print(userInfo) // Imprime el mensaje completo
-        completionHandler() // Llama al completador indicando que se ha manejado la notificación
+        let userInfo = response.notification.request.content.userInfo
+        print(userInfo)
+        completionHandler()
     }
 }
 
-// Define la clase UserInterfaceMode que implementa ObservableObject para notificar cambios a las vistas
 class UserInterfaceMode: ObservableObject {
-    @Published var isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark // Publica la variable isDarkModeEnabled para notificar los cambios
+    @Published var isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark
 }
 
-@main // Anotación que indica el punto de entrada de la aplicación
+@main
 struct MyApp: App {
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate // Adapta AppDelegate para usarlo con SwiftUI
-    @StateObject var userInterfaceMode = UserInterfaceMode() // Crea una instancia de UserInterfaceMode como un objeto de estado
-    @StateObject var sessionStore = SessionStore() // Crea una instancia de SessionStore como un objeto de estado
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @StateObject var userInterfaceMode = UserInterfaceMode()
+    @StateObject var sessionStore = SessionStore()
 
-    // Define el cuerpo de la escena de la aplicación
     var body: some Scene {
-        // Define el grupo de ventanas para la aplicación
         WindowGroup {
-            if sessionStore.isLoggedIn { // Comprueba si el usuario está autenticado
-                MoviesView() // Muestra la vista de películas si el usuario está autenticado
-                    .environmentObject(sessionStore) // Proporciona sessionStore como un objeto de entorno
-                    .environmentObject(userInterfaceMode) // Proporciona userInterfaceMode como un objeto de entorno
-                    .preferredColorScheme(userInterfaceMode.isDarkModeEnabled ? .dark : .light) // Establece el esquema de color preferido según el modo oscuro
-                    .onAppear { // Ejecuta el código cuando la vista aparece
-                        NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillChangeFrameNotification, object: nil, queue: .main) { _ in // Añade un observador para los cambios en el marco del teclado
-                            let isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark // Comprueba si el modo oscuro está habilitado
-                            if isDarkModeEnabled != userInterfaceMode.isDarkModeEnabled { // Si el estado del modo oscuro ha cambiado
-                                userInterfaceMode.isDarkModeEnabled = isDarkModeEnabled // Actualiza el estado del modo oscuro
-                            }
+            RootView()
+                .environmentObject(sessionStore)
+                .environmentObject(userInterfaceMode)
+                .preferredColorScheme(userInterfaceMode.isDarkModeEnabled ? .dark : .light)
+                .onAppear {
+                    NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillChangeFrameNotification, object: nil, queue: .main) { _ in
+                        let isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark
+                        if isDarkModeEnabled != userInterfaceMode.isDarkModeEnabled {
+                            userInterfaceMode.isDarkModeEnabled = isDarkModeEnabled
                         }
-                        sessionStore.listen() // Llama a la función listen de sessionStore para escuchar los cambios en el estado de autenticación
                     }
+                    sessionStore.listen()
+                }
+        }
+    }
+}
+
+struct RootView: View {
+    @EnvironmentObject var session: SessionStore
+
+    var body: some View {
+        Group {
+            if session.isLoggedIn {
+                MoviesView()
             } else {
-                LoginView() // Muestra la vista de inicio de sesión si el usuario no está autenticado
-                    .environmentObject(sessionStore) // Proporciona sessionStore como un objeto de entorno
-                    .environmentObject(userInterfaceMode) // Proporciona userInterfaceMode como un objeto de entorno
-                    .preferredColorScheme(userInterfaceMode.isDarkModeEnabled ? .dark : .light) // Establece el esquema de color preferido según el modo oscuro
-                    .onAppear { // Ejecuta el código cuando la vista aparece
-                        NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillChangeFrameNotification, object: nil, queue: .main) { _ in // Añade un observador para los cambios en el marco del teclado
-                            let isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark // Comprueba si el modo oscuro está habilitado
-                            if isDarkModeEnabled != userInterfaceMode.isDarkModeEnabled { // Si el estado del modo oscuro ha cambiado
-                                userInterfaceMode.isDarkModeEnabled = isDarkModeEnabled // Actualiza el estado del modo oscuro
-                            }
-                        }
-                        sessionStore.listen() // Llama a la función listen de sessionStore para escuchar los cambios en el estado de autenticación
-                    }
+                LoginView()
             }
         }
     }
