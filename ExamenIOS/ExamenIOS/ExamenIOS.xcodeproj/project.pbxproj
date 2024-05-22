@@ -243,10 +243,10 @@
 				6C6320702BEB729600A13986 /* LoginView.swift */,
 				6CCFA8272BF74A4B0084772E /* LoginApple.swift */,
 				6CCFA8292BF74A580084772E /* LoginGoogle.swift */,
-				6CCFA8352BF766340084772E /* LoginFacebook.swift */,
+				6CCFA8372BF76E9C0084772E /* FacebookLoginButton.swift */,
 				6CCFA82B2BF74A630084772E /* FaceID.swift */,
 				6C6320BA2BEB909F00A13986 /* PasswordResetView.swift */,
-				6CCFA8372BF76E9C0084772E /* FacebookLoginButton.swift */,
+				6CCFA8352BF766340084772E /* LoginFacebook.swift */,
 			);
 			path = Login;
 			sourceTree = "<group>";

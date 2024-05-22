@@ -1,4 +1,4 @@
-import FacebookLogin
+/*import FacebookLogin
 import FirebaseAuth
 import SwiftUI
 import FacebookCore
@@ -119,4 +119,4 @@ class LoginFacebook: ObservableObject {
         }
     }
 }
-
+ */

@@ -39,7 +39,12 @@
     <key>LSApplicationQueriesSchemes</key> <!-- Añadido para Google -->
     <array>
         <string>com.googleusercontent.apps.944597412661-20r6en0vrrhhqj3j2tobso5a84k9fjfu</string> <!-- Añadido para Google -->
+        <string>fbapi</string> <!-- Añadido para Facebook -->
     </array>
+    <key>FacebookAutoLogAppEventsEnabled</key>
+    <true/> <!-- O false si deseas deshabilitarlo hasta que el usuario dé su consentimiento -->
+    <key>FacebookAdvertiserIDCollectionEnabled</key>
+    <true/>
 </dict>
 </plist>
 

@@ -16,7 +16,6 @@ struct LoginView: View {
     private let googleSignInManager = GoogleSignInManager()
     private let appleSignInManager = AppleSignInManager()
     private let faceIDManager = FaceIDManager()
-    @StateObject private var facebookLoginManager = LoginFacebook()
 
     var body: some View {
         NavigationStack {
@@ -37,11 +36,7 @@ struct LoginView: View {
                     }
                 }
                 .onAppear {
-                    facebookLoginManager.setSession(session: session) // Set the session here
-                    facebookLoginManager.checkExistingToken()
-                    if facebookLoginManager.isUserLoggedIn {
-                        session.isLoggedIn = true
-                    }
+                    session.listen()
                 }
                 .navigationDestination(isPresented: $session.isLoggedIn) {
                     MoviesView().environmentObject(userData)
@@ -178,11 +173,12 @@ struct LoginView: View {
                         .cornerRadius(8)
                 }
                 
-                FacebookLoginButton(loginFacebook: facebookLoginManager)
+                FacebookLoginButton()
                     .frame(width: 60, height: 60)
                     .padding(8)
                     .background(colorScheme == .dark ? Color.black : Color.white)
                     .cornerRadius(8)
+                    .environmentObject(session) // Asegúrate de pasar session como un environmentObject
             }
             .padding(2)
         }

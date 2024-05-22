@@ -3,9 +3,6 @@ import Firebase
 import FirebaseAuth
 import FirebaseFirestore
 import FirebaseStorage
-import GoogleSignIn
-import LocalAuthentication
-import AuthenticationServices
 import Kingfisher
 
 class UserData: ObservableObject {
@@ -17,8 +14,9 @@ class UserData: ObservableObject {
     @Published var profileImage: UIImage?
     @Published var profileImageURL: String? = nil // Cambiar a opcional
 }
+
 struct PerfilView: View {
-    @StateObject private var userData = UserData()
+    @EnvironmentObject var session: SessionStore // Usar la instancia de SessionStore desde el entorno
     @State private var editingField: String? = nil
     @State private var showActionSheet = false
     @State private var showImagePicker = false
@@ -38,7 +36,7 @@ struct PerfilView: View {
                         .edgesIgnoringSafeArea(.top)
                     
                     VStack(alignment: .center, spacing: 20) {
-                        Text(userData.firstName)
+                        Text(session.userData.firstName ?? "")
                             .font(.title)
                             .fontWeight(.bold)
                             .padding(.top, 10)
@@ -55,7 +53,7 @@ struct PerfilView: View {
                             
                             Spacer(minLength: 8)
                             
-                            Text(userData.email)
+                            Text(session.userData.email ?? "")
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .font(.body)
                                 .foregroundColor(.primary)
@@ -64,10 +62,10 @@ struct PerfilView: View {
                         .padding(.vertical, 1)
                         
                         VStack(alignment: .leading) {
-                            userInfoField(label: "Nombre", value: $userData.firstName, editing: $editingField, fieldKey: "firstName", editable: true)
-                            userInfoField(label: "Apellidos", value: $userData.lastName, editing: $editingField, fieldKey: "lastName", editable: true)
-                            datePickerField(label: "Fecha de Nacimiento:", date: $userData.birthDate, editing: $editingField, fieldKey: "birthDate")
-                            genderPickerField(label: "Género", value: $userData.gender, editing: $editingField, fieldKey: "gender")
+                            userInfoField(label: "Nombre", value: $session.userData.firstName, editing: $editingField, fieldKey: "firstName", editable: true)
+                            userInfoField(label: "Apellidos", value: $session.userData.lastName, editing: $editingField, fieldKey: "lastName", editable: true)
+                            datePickerField(label: "Fecha de Nacimiento:", date: $session.userData.birthDate, editing: $editingField, fieldKey: "birthDate")
+                            genderPickerField(label: "Género", value: $session.userData.gender, editing: $editingField, fieldKey: "gender")
                         }
                         
                         Button("Guardar Cambios", action: saveData)
@@ -82,7 +80,19 @@ struct PerfilView: View {
                 }
                 .onAppear(perform: loadUserData)
                 .sheet(isPresented: $showImagePicker) {
-                    ImagePicker(image: $userData.profileImage)
+                    ImagePicker(image: $session.userData.profileImage, sourceType: sourceType!)
+                        .onDisappear(perform: {
+                            if let profileImage = session.userData.profileImage {
+                                saveProfileImage(userId: Auth.auth().currentUser?.uid ?? "", image: profileImage) { success in
+                                    if success {
+                                        // La imagen se ha guardado correctamente, se puede proceder con el guardado de los datos del usuario
+                                        self.saveUserDataToFirestore()
+                                    }
+                                }
+                            } else {
+                                self.saveUserDataToFirestore()
+                            }
+                        })
                 }
                 .alert(isPresented: $showAlert) {
                     Alert(
@@ -111,7 +121,13 @@ struct PerfilView: View {
                 .frame(width: 140, height: 140)
                 .shadow(radius: 10)
             
-            if let urlString = userData.profileImageURL, let url = URL(string: urlString) {
+            if let profileImage = session.userData.profileImage {
+                Image(uiImage: profileImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 130, height: 130)
+                    .clipShape(Circle())
+            } else if let urlString = session.userData.profileImageURL, let url = URL(string: urlString) {
                 KFImage(url)
                     .resizable()
                     .placeholder {
@@ -153,10 +169,10 @@ struct PerfilView: View {
             ])
         }
         .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: $userData.profileImage, sourceType: sourceType!)
+            ImagePicker(image: $session.userData.profileImage, sourceType: sourceType!)
         }
         .sheet(isPresented: $showDocumentPicker) {
-            DocumentPicker(image: $userData.profileImage)
+            DocumentPicker(image: $session.userData.profileImage)
         }
     }
 
@@ -257,36 +273,95 @@ struct PerfilView: View {
     func saveData() {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         
-        if let profileImage = userData.profileImage {
-            saveProfileImage(userId: userId, image: profileImage)
+        if let profileImage = session.userData.profileImage {
+            saveProfileImage(userId: userId, image: profileImage) { success in
+                if success {
+                    // La imagen se ha guardado correctamente, se puede proceder con el guardado de los datos del usuario
+                    self.saveUserDataToFirestore()
+                }
+            }
+        } else {
+            self.saveUserDataToFirestore()
         }
+    }
+
+    func saveUserDataToFirestore() {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
         
         let db = Firestore.firestore()
-        let userData: [String: Any] = [
-            "email": self.userData.email,
-            "firstName": self.userData.firstName,
-            "lastName": self.userData.lastName,
-            "birthDate": DateFormatter.iso8601Full.string(from: self.userData.birthDate),
-            "gender": self.userData.gender,
-            "profileImageURL": self.userData.profileImageURL ?? "" // Usar el valor opcional correctamente
+        let userDataDict: [String: Any] = [
+            "email": session.userData.email ?? "",
+            "firstName": session.userData.firstName ?? "",
+            "lastName": session.userData.lastName ?? "",
+            "birthDate": DateFormatter.iso8601Full.string(from: session.userData.birthDate ?? Date()),
+            "gender": session.userData.gender ?? "",
+            "profileImageURL": session.userData.profileImageURL ?? ""
         ]
         
-        db.collection("users").document(userId).setData(userData) { error in
+        db.collection("users").document(userId).setData(userDataDict) { error in
             if let error = error {
                 print("Error updating user data: \(error.localizedDescription)")
             } else {
                 print("User data updated successfully")
                 self.showAlert = true
                 self.alertMessage = "Datos guardados correctamente"
-                if let profileImageURL = self.userData.profileImageURL {
-                    DataManager.shared.cacheProfileImageURL(profileImageURL) // Cachear URL de imagen
+                if let profileImageURL = session.userData.profileImageURL {
+                    DataManager.shared.cacheProfileImageURL(profileImageURL)
                 }
             }
         }
     }
 
+    func saveProfileImage(userId: String, image: UIImage, completion: @escaping (Bool) -> Void) {
+        let resizedImage = image.resized(to: CGSize(width: 300, height: 300))
+        
+        guard let imageData = resizedImage.jpegData(compressionQuality: 0.5) else {
+            print("Failed to convert image to JPEG data")
+            completion(false)
+            return
+        }
+        
+        let storageRef = Storage.storage().reference().child("profile_images/\(userId).jpg")
+        
+        let uploadTask = storageRef.putData(imageData, metadata: nil) { metadata, error in
+            guard let _ = metadata, error == nil else {
+                print("Error uploading profile image:", error?.localizedDescription ?? "Unknown error")
+                completion(false)
+                return
+            }
+            
+            storageRef.downloadURL { url, error in
+                guard let downloadURL = url, error == nil else {
+                    print("Error fetching download URL:", error?.localizedDescription ?? "Unknown error")
+                    completion(false)
+                    return
+                }
+                
+                DispatchQueue.main.async {
+                    session.userData.profileImageURL = downloadURL.absoluteString
+                    self.updateProfileImageURLInFirestore(userId: userId, imageUrl: downloadURL.absoluteString) { success in
+                        completion(success)
+                    }
+                }
+            }
+        }
+    }
+
+    func updateProfileImageURLInFirestore(userId: String, imageUrl: String, completion: @escaping (Bool) -> Void) {
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).updateData(["profileImageURL": imageUrl]) { error in
+            if let error = error {
+                print("Error updating image URL in Firestore:", error.localizedDescription)
+                completion(false)
+            } else {
+                print("Image URL successfully updated in Firestore")
+                completion(true)
+            }
+        }
+    }
+
     func loadImageFromGoogle() {
-        if userData.profileImage == nil {
+        if session.userData.profileImage == nil {
             guard let user = Auth.auth().currentUser else {
                 print("No hay usuario autenticado")
                 return
@@ -300,8 +375,8 @@ struct PerfilView: View {
                     }
                     DispatchQueue.main.async {
                         if let image = UIImage(data: data) {
-                            self.userData.profileImage = image
-                            self.saveProfileImage(userId: user.uid, image: image)
+                            session.userData.profileImage = image
+                            self.saveProfileImage(userId: user.uid, image: image) { _ in }
                             DataManager.shared.cacheProfileImageURL(imageUrl.absoluteString)
                         }
                     }
@@ -321,16 +396,16 @@ struct PerfilView: View {
             if let document = document, document.exists {
                 let data = document.data()
                 DispatchQueue.main.async {
-                    self.userData.email = data?["email"] as? String ?? ""
-                    self.userData.firstName = data?["firstName"] as? String ?? ""
-                    self.userData.lastName = data?["lastName"] as? String ?? ""
-                    self.userData.gender = data?["gender"] as? String ?? ""
+                    session.userData.email = data?["email"] as? String ?? ""
+                    session.userData.firstName = data?["firstName"] as? String ?? ""
+                    session.userData.lastName = data?["lastName"] as? String ?? ""
+                    session.userData.gender = data?["gender"] as? String ?? ""
                     
                     if let birthDate = data?["birthDate"] as? String {
                         let dateFormatter = DateFormatter()
                         dateFormatter.dateFormat = "yyyy-MM-dd"
                         if let date = dateFormatter.date(from: birthDate) {
-                            self.userData.birthDate = date
+                            session.userData.birthDate = date
                         } else {
                             print("Error: No se pudo convertir la fecha de nacimiento a Date")
                         }
@@ -339,7 +414,7 @@ struct PerfilView: View {
                     }
                     
                     if let profileImageURL = data?["profileImageURL"] as? String {
-                        self.userData.profileImageURL = profileImageURL
+                        session.userData.profileImageURL = profileImageURL
                         self.loadProfileImageFromURL()
                     } else {
                         self.loadImageFromGoogle()
@@ -352,31 +427,31 @@ struct PerfilView: View {
     }
 
     func loadUserDataFromApple() {
-        if userData.profileImage == nil {
+        if session.userData.profileImage == nil {
             guard let user = Auth.auth().currentUser else {
                 print("No hay usuario autenticado")
                 return
             }
             
-            userData.email = user.email ?? ""
-            userData.firstName = user.displayName?.components(separatedBy: " ").first ?? ""
-            userData.lastName = user.displayName?.components(separatedBy: " ").last ?? ""
+            session.userData.email = user.email ?? ""
+            session.userData.firstName = user.displayName?.components(separatedBy: " ").first ?? ""
+            session.userData.lastName = user.displayName?.components(separatedBy: " ").last ?? ""
         }
     }
 
     func updateUserData(with data: [String: Any]?) {
         guard let data = data else { return }
-        self.userData.email = data["email"] as? String ?? ""
-        self.userData.firstName = data["firstName"] as? String ?? ""
-        self.userData.lastName = data["lastName"] as? String ?? ""
-        self.userData.gender = data["gender"] as? String ?? ""
+        session.userData.email = data["email"] as? String ?? ""
+        session.userData.firstName = data["firstName"] as? String ?? ""
+        session.userData.lastName = data["lastName"] as? String ?? ""
+        session.userData.gender = data["gender"] as? String ?? ""
         
         if let birthDateTimestamp = data["birthDate"] as? Timestamp {
-            self.userData.birthDate = birthDateTimestamp.dateValue()
+            session.userData.birthDate = birthDateTimestamp.dateValue()
         }
         
         if let profileImageURL = data["profileImageURL"] as? String {
-            self.userData.profileImageURL = profileImageURL
+            session.userData.profileImageURL = profileImageURL
             self.loadProfileImageFromURL()
         } else {
             self.loadUserDataFromApple()
@@ -384,7 +459,7 @@ struct PerfilView: View {
     }
 
     func loadProfileImageFromURL() {
-        guard let urlString = userData.profileImageURL, let url = URL(string: urlString) else { return }
+        guard let urlString = session.userData.profileImageURL, let url = URL(string: urlString) else { return }
         URLSession.shared.dataTask(with: url) { data, response, error in
             guard let data = data, error == nil else {
                 print("Failed to download image data:", error?.localizedDescription ?? "Unknown error")
@@ -392,58 +467,16 @@ struct PerfilView: View {
             }
             DispatchQueue.main.async {
                 if let image = UIImage(data: data) {
-                    self.userData.profileImage = image
+                    session.userData.profileImage = image
                 }
             }
         }.resume()
-    }
-
-    func saveProfileImage(userId: String, image: UIImage) {
-        let resizedImage = image.resized(to: CGSize(width: 300, height: 300))
-        
-        guard let imageData = resizedImage.jpegData(compressionQuality: 0.5) else {
-            print("Failed to convert image to JPEG data")
-            return
-        }
-        
-        let storageRef = Storage.storage().reference().child("profile_images/\(userId).jpg")
-        
-        let uploadTask = storageRef.putData(imageData, metadata: nil) { metadata, error in
-            guard let _ = metadata, error == nil else {
-                print("Error uploading profile image:", error?.localizedDescription ?? "Unknown error")
-                return
-            }
-            
-            storageRef.downloadURL { url, error in
-                guard let downloadURL = url, error == nil else {
-                    print("Error fetching download URL:", error?.localizedDescription ?? "Unknown error")
-                    return
-                }
-                
-                DispatchQueue.main.async {
-                    self.userData.profileImageURL = downloadURL.absoluteString
-                    self.updateProfileImageURLInFirestore(userId: userId, imageUrl: downloadURL.absoluteString)
-                    DataManager.shared.cacheProfileImageURL(downloadURL.absoluteString)
-                }
-            }
-        }
-    }
-
-    func updateProfileImageURLInFirestore(userId: String, imageUrl: String) {
-        let db = Firestore.firestore()
-        db.collection("users").document(userId).updateData(["profileImageURL": imageUrl]) { error in
-            if let error = error {
-                print("Error updating image URL in Firestore:", error.localizedDescription)
-            } else {
-                print("Image URL successfully updated in Firestore")
-            }
-        }
     }
 }
 
 struct PerfilView_Previews: PreviewProvider {
     static var previews: some View {
-        PerfilView()
+        PerfilView().environmentObject(SessionStore())
     }
 }
 
@@ -462,3 +495,4 @@ extension UIImage {
         return UIGraphicsGetImageFromCurrentImageContext() ?? self
     }
 }
+

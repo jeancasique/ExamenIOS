@@ -2,9 +2,10 @@ import SwiftUI
 import FacebookLogin
 import FirebaseAuth
 import FacebookCore
+import FirebaseFirestore
 
 struct FacebookLoginButton: UIViewRepresentable {
-    @ObservedObject var loginFacebook: LoginFacebook
+    @EnvironmentObject var session: SessionStore
 
     func makeUIView(context: Context) -> UIView {
         let container = UIView()
@@ -33,6 +34,8 @@ struct FacebookLoginButton: UIViewRepresentable {
 
         init(_ parent: FacebookLoginButton) {
             self.parent = parent
+            super.init()
+            checkExistingToken()
         }
 
         @objc func didTapCustomButton() {
@@ -54,9 +57,78 @@ struct FacebookLoginButton: UIViewRepresentable {
                         print("Facebook authentication failed: \(error.localizedDescription)")
                         return
                     }
-                    self.parent.loginFacebook.isUserLoggedIn = true
-                    print("User is signed in with Facebook")
+                    DispatchQueue.main.async {
+                        self.fetchFacebookUserData()
+                    }
                 }
+            }
+        }
+
+        func checkExistingToken() {
+            if let token = AccessToken.current, !token.isExpired {
+                DispatchQueue.main.async {
+                    self.parent.session.isLoggedIn = true
+                }
+                print("User is already logged in with Facebook")
+                fetchFacebookUserData()
+            } else {
+                DispatchQueue.main.async {
+                    self.parent.session.isLoggedIn = false
+                }
+            }
+        }
+
+        func fetchFacebookUserData() {
+            let connection = GraphRequestConnection()
+            connection.add(GraphRequest(graphPath: "/me", parameters: ["fields": "id, email, name, picture.type(large)"])) { httpResponse, result, error in
+                if let error = error {
+                    print("Failed to get user data: \(error.localizedDescription)")
+                    return
+                }
+
+                guard let result = result as? [String: Any] else { return }
+                let email = result["email"] as? String ?? ""
+                let fullName = result["name"] as? String ?? ""
+                let picture = (result["picture"] as? [String: Any])?["data"] as? [String: Any]
+                let profileImageURL = picture?["url"] as? String ?? ""
+
+                // Separar el nombre completo en firstName y lastName
+                let nameComponents = fullName.split(separator: " ")
+                let firstName = nameComponents.first.map(String.init) ?? ""
+                let lastName = nameComponents.dropFirst().joined(separator: " ")
+
+                DispatchQueue.main.async {
+                    self.saveUserDataToFirestore(email: email, firstName: firstName, lastName: lastName, profileImageURL: profileImageURL)
+                }
+            }
+            connection.start()
+        }
+
+        func saveUserDataToFirestore(email: String, firstName: String, lastName: String, profileImageURL: String) {
+            guard let userId = Auth.auth().currentUser?.uid else { return }
+            let db = Firestore.firestore()
+            let userData: [String: Any] = [
+                "email": email,
+                "firstName": firstName, // Guardar el primer nombre
+                "lastName": lastName, // Guardar el apellido
+                "profileImageURL": profileImageURL
+            ]
+            db.collection("users").document(userId).setData(userData) { error in
+                if let error = error {
+                    print("Error saving user data: \(error.localizedDescription)")
+                } else {
+                    print("User data saved successfully")
+                    DispatchQueue.main.async {
+                        self.updateSessionStore(firstName: firstName, lastName: lastName, profileImageURL: profileImageURL)
+                    }
+                }
+            }
+        }
+
+        func updateSessionStore(firstName: String, lastName: String, profileImageURL: String) {
+            DispatchQueue.main.async {
+                self.parent.session.updateUserDataFromFacebook(firstName: firstName, lastName: lastName, profileImageURL: profileImageURL)
+                self.parent.session.isLoggedIn = true
             }
         }
 
@@ -67,7 +139,9 @@ struct FacebookLoginButton: UIViewRepresentable {
         func loginButtonDidLogOut(_ loginButton: FBLoginButton) {
             do {
                 try Auth.auth().signOut()
-                self.parent.loginFacebook.isUserLoggedIn = false
+                DispatchQueue.main.async {
+                    self.parent.session.isLoggedIn = false
+                }
                 print("User is signed out")
             } catch let signOutError as NSError {
                 print("Error signing out: \(signOutError.localizedDescription)")

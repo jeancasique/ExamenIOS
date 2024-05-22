@@ -58,7 +58,13 @@ struct PasswordResetView: View {
             }
             
             Button("Restablecer Contraseña") {
-                resetPassword()
+                if email.isEmpty {
+                    alertMessage = "Por favor, introduce un correo electrónico."
+                    showAlert = true
+                    shouldNavigateToLogin = false // No navegar a LoginView si el correo está vacío
+                } else {
+                    checkIfEmailExistsAndResetPassword()
+                }
             }
             .padding()
             .foregroundColor(.white)
@@ -76,7 +82,10 @@ struct PasswordResetView: View {
                 title: Text("Recuperar Contraseña"),
                 message: Text(alertMessage),
                 dismissButton: .default(Text("OK"), action: {
-                    shouldNavigateToLogin = true  // Activa la navegación al LoginView
+                    if shouldNavigateToLogin {
+                        // Activar la navegación solo si debería navegar a LoginView
+                        shouldNavigateToLogin = true
+                    }
                 })
             )
         }
@@ -85,17 +94,41 @@ struct PasswordResetView: View {
         )
     }
 
-    private func resetPassword() {
+    private func checkIfEmailExistsAndResetPassword() {
         if isEmailValid {
-            Auth.auth().sendPasswordReset(withEmail: email) { error in
+            let db = Firestore.firestore()
+            db.collection("users").whereField("email", isEqualTo: email).getDocuments { (snapshot, error) in
                 if let error = error {
-                    alertMessage = "Error al enviar el correo electrónico de restablecimiento de contraseña: \(error.localizedDescription)"
+                    alertMessage = "Error al verificar el correo: \(error.localizedDescription)"
                     showAlert = true
+                    shouldNavigateToLogin = false
+                } else if snapshot?.documents.isEmpty == true {
+                    alertMessage = "El correo electrónico no está registrado."
+                    showAlert = true
+                    shouldNavigateToLogin = false
                 } else {
-                    alertMessage = "Se ha enviado un correo electrónico de restablecimiento de contraseña a \(email). Por favor, verifica tu bandeja de entrada."
-                    email = ""
-                    showAlert = true
+                    // El correo electrónico está registrado, proceder con el restablecimiento de la contraseña
+                    resetPassword()
                 }
+            }
+        } else {
+            alertMessage = "Por favor, introduce un correo electrónico válido."
+            showAlert = true
+            shouldNavigateToLogin = false // No navegar a LoginView si el correo no es válido
+        }
+    }
+
+    private func resetPassword() {
+        Auth.auth().sendPasswordReset(withEmail: email) { error in
+            if let error = error {
+                alertMessage = "Error al enviar el correo electrónico de restablecimiento de contraseña: \(error.localizedDescription)"
+                showAlert = true
+                shouldNavigateToLogin = false // No navegar a LoginView en caso de error
+            } else {
+                alertMessage = "Se ha enviado un correo electrónico de restablecimiento de contraseña a \(email). Por favor, verifica tu bandeja de entrada."
+                email = ""
+                showAlert = true
+                shouldNavigateToLogin = true // Navegar a LoginView en caso de éxito
             }
         }
     }

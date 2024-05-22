@@ -3,98 +3,92 @@ import FirebaseAuth
 import Kingfisher
 
 struct MenuView: View {
-    @Binding var isOpen: Bool // Binding para controlar si el menú está abierto
-    @State private var showProfile = false // Estado para mostrar la vista de perfil
-    @State private var showFavorites = false // Estado para mostrar la vista de favoritos
-    @State private var showSettings = false // Estado para mostrar la vista de ajustes
-    @State private var showHome = false // Estado para mostrar la vista de home (MoviesView)
-    @State private var isLoggedOut = false // Estado para manejar la redirección al logout
+    @Binding var isOpen: Bool
+    @State private var showProfile = false
+    @State private var showFavorites = false
+    @State private var showSettings = false
+    @State private var showHome = false
+    @State private var isLoggedOut = false
     
-    @EnvironmentObject var session: SessionStore // Estado de sesión
+    @EnvironmentObject var session: SessionStore
     
     var body: some View {
         ZStack(alignment: .leading) {
-            // Contenedor principal del menú
             VStack(alignment: .leading, spacing: 20) {
-                // Foto de perfil y nombre de usuario
                 VStack(alignment: .center) {
-                    profileImageSection // Imagen de perfil del usuario
+                    profileImageSection
                     
-                    Text(session.userData?.firstName.isEmpty ?? true ? "Hola, usuario!" : "Hola \(session.userData?.firstName ?? "")") // Nombre del usuario
+                    Text(session.userData.firstName.isEmpty ? "Hola, usuario!" : "Hola \(session.userData.firstName)")
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundColor(.primary) // Cambia el color para ser compatible con el modo oscuro
+                        .foregroundColor(.primary)
                         .lineLimit(1)
-
                     
-                    Text("UX/UI Designer") // Descripción del usuario
+                    Text("UX/UI Designer")
                         .foregroundColor(.gray)
                 }
                 .padding(.top, 30)
                 .padding(.horizontal, 50)
                 .padding(.bottom, 10)
                 
-                Divider() // Línea divisoria
+                Divider()
                 
-                // Opciones del menú
                 Group {
                     MenuItem(icon: "house.fill", text: "Home") {
-                        self.showHome = true // Acción para mostrar la vista de home (MoviesView)
+                        self.showHome = true
                     }
                     MenuItem(icon: "person.fill", text: "Perfil") {
-                        self.showProfile = true // Acción para mostrar la vista de perfil
+                        self.showProfile = true
                     }
                     MenuItem(icon: "bookmark.fill", text: "Favoritos") {
-                        self.showFavorites = true // Acción para mostrar la vista de favoritos
+                        self.showFavorites = true
                     }
                     MenuItem(icon: "gearshape.fill", text: "Ajustes") {
-                        self.showSettings = true // Acción para mostrar la vista de ajustes
+                        self.showSettings = true
                     }
                 }
                 .padding(.horizontal)
                 
-                Spacer() // Espacio flexible para empujar los elementos hacia arriba
+                Spacer()
                 
-                Divider() // Línea divisoria
+                Divider()
                 
-                // Opción de logout
                 MenuItem(icon: "arrowshape.turn.up.left.fill", text: "Logout") {
-                    logout() // Acción para cerrar sesión
+                    logout()
                 }
                 .padding(.bottom, 40)
                 .padding(.horizontal)
             }
-            .background(Color(UIColor.systemBackground)) // Fondo del menú, compatible con modo oscuro
-            .frame(width: UIScreen.main.bounds.width * 0.7) // 70% del ancho de la pantalla
-            .shadow(radius: 20) // Sombra para dar efecto de profundidad
+            .background(Color(UIColor.systemBackground))
+            .frame(width: UIScreen.main.bounds.width * 0.7)
+            .shadow(radius: 20)
         }
-        // Presentación de vistas en pantalla completa cuando se seleccionan las opciones del menú
         .fullScreenCover(isPresented: $showHome) {
             NavigationView {
-                MoviesView() // Vista de home (MoviesView)
+                MoviesView()
                     .environmentObject(session)
-                    .navigationBarBackButtonHidden(false) // Mostrar el botón de retroceso
+                    .navigationBarBackButtonHidden(false)
             }
         }
         .fullScreenCover(isPresented: $showProfile) {
             NavigationView {
-                PerfilView() // Vista de perfil
+                PerfilView()
                     .environmentObject(session)
-                    .navigationBarBackButtonHidden(false) // Mostrar el botón de retroceso
+                    .navigationBarBackButtonHidden(false)
             }
         }
         .fullScreenCover(isPresented: $showFavorites) {
             NavigationView {
-                FavoritesMovies() // Vista de favoritos
+                FavoritesMovies()
                     .environmentObject(session)
-                    .navigationBarBackButtonHidden(false) // Mostrar el botón de retroceso
+                    .navigationBarBackButtonHidden(false)
             }
         }
         .fullScreenCover(isPresented: $showSettings) {
             NavigationView {
-                Ajustes() // Vista de ajustes
+                Ajustes()
                     .environmentObject(session)
-                    .navigationBarBackButtonHidden(false) // Mostrar el botón de retroceso
+                    .navigationBarBackButtonHidden(false)
             }
         }
         .fullScreenCover(isPresented: $isLoggedOut) {
@@ -103,7 +97,6 @@ struct MenuView: View {
         }
     }
 
-    // Sección que muestra y gestiona la imagen de perfil
     var profileImageSection: some View {
         ZStack {
             Circle()
@@ -111,7 +104,12 @@ struct MenuView: View {
                 .frame(width: 140, height: 140)
                 .shadow(radius: 10)
             
-            if let urlString = session.userData?.profileImageURL, !urlString.isEmpty, let url = URL(string: urlString) {
+            if let profileImage = session.userData.profileImage {
+                Image(uiImage: profileImage)
+                    .resizable()
+                    .clipShape(Circle())
+                    .frame(width: 130, height: 130)
+            } else if let urlString = session.userData.profileImageURL, let url = URL(string: urlString) {
                 KFImage(url)
                     .resizable()
                     .placeholder {
@@ -135,39 +133,36 @@ struct MenuView: View {
         }
     }
 
-    // Función para cerrar sesión y navegar a la pantalla de LoginView
     func logout() {
         session.signOut()
         self.isLoggedOut = true
     }
 }
 
-// Componente para los elementos del menú
 struct MenuItem: View {
-    var icon: String // Nombre del icono del sistema
-    var text: String // Texto de la opción del menú
-    var action: () -> Void // Acción a ejecutar cuando se selecciona el elemento
+    var icon: String
+    var text: String
+    var action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack {
-                Image(systemName: icon) // Icono del elemento del menú
-                    .foregroundColor(.primary) // Cambiar a .primary para adaptarse al modo oscuro
-                Text(text) // Texto del elemento del menú
+                Image(systemName: icon)
+                    .foregroundColor(.primary)
+                Text(text)
                     .font(.headline)
-                    .foregroundColor(.primary) // Cambiar a .primary para adaptarse al modo oscuro
-                Spacer() // Espacio flexible para empujar el texto a la izquierda
+                    .foregroundColor(.primary)
+                Spacer()
             }
             .padding()
         }
     }
 }
 
-// Vista de previsualización para SwiftUI
 struct MenuView_Previews: PreviewProvider {
     static var previews: some View {
         MenuView(isOpen: .constant(true))
-            .environmentObject(SessionStore()) // Añadir SessionStore para la previsualización
+            .environmentObject(SessionStore())
     }
 }
 
