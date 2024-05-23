@@ -5,15 +5,6 @@ import FirebaseFirestore
 import FirebaseStorage
 import Kingfisher
 
-class UserData: ObservableObject {
-    @Published var email: String = ""
-    @Published var firstName: String = ""
-    @Published var lastName: String = ""
-    @Published var birthDate: Date = Date()
-    @Published var gender: String = ""
-    @Published var profileImage: UIImage?
-    @Published var profileImageURL: String? = nil // Cambiar a opcional
-}
 
 struct PerfilView: View {
     @EnvironmentObject var session: SessionStore // Usar la instancia de SessionStore desde el entorno
@@ -36,7 +27,7 @@ struct PerfilView: View {
                         .edgesIgnoringSafeArea(.top)
                     
                     VStack(alignment: .center, spacing: 20) {
-                        Text(session.userData.firstName ?? "")
+                        Text(session.userData.firstName)
                             .font(.title)
                             .fontWeight(.bold)
                             .padding(.top, 10)
@@ -53,7 +44,7 @@ struct PerfilView: View {
                             
                             Spacer(minLength: 8)
                             
-                            Text(session.userData.email ?? "")
+                            Text(session.userData.email)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .font(.body)
                                 .foregroundColor(.primary)
@@ -290,11 +281,11 @@ struct PerfilView: View {
         
         let db = Firestore.firestore()
         let userDataDict: [String: Any] = [
-            "email": session.userData.email ?? "",
-            "firstName": session.userData.firstName ?? "",
-            "lastName": session.userData.lastName ?? "",
-            "birthDate": DateFormatter.iso8601Full.string(from: session.userData.birthDate ?? Date()),
-            "gender": session.userData.gender ?? "",
+            "email": session.userData.email,
+            "firstName": session.userData.firstName,
+            "lastName": session.userData.lastName,
+            "birthDate": DateFormatter.iso8601Full.string(from: session.userData.birthDate),
+            "gender": session.userData.gender,
             "profileImageURL": session.userData.profileImageURL ?? ""
         ]
         
@@ -401,10 +392,10 @@ struct PerfilView: View {
                     session.userData.lastName = data?["lastName"] as? String ?? ""
                     session.userData.gender = data?["gender"] as? String ?? ""
                     
-                    if let birthDate = data?["birthDate"] as? String {
+                    if let birthDateString = data?["birthDate"] as? String {
                         let dateFormatter = DateFormatter()
                         dateFormatter.dateFormat = "yyyy-MM-dd"
-                        if let date = dateFormatter.date(from: birthDate) {
+                        if let date = dateFormatter.date(from: birthDateString) {
                             session.userData.birthDate = date
                         } else {
                             print("Error: No se pudo convertir la fecha de nacimiento a Date")

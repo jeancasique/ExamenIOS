@@ -22,7 +22,9 @@ struct RegistrationView: View {
     @State private var showAlert = false
     @State private var shouldNavigateToLogin = false
     @State private var showTermsSheet = false
- 
+
+    // Estado para verificar si el correo ya está registrado
+    @State private var emailAlreadyRegistered = false
 
     var body: some View {
         NavigationStack {
@@ -66,45 +68,54 @@ struct RegistrationView: View {
 
                 // Sección para las credenciales de acceso
                 Section(header: Text("Credenciales de Acceso")) {
-                                  TextField("Correo Electrónico", text: $email)
-                                  if let error = formErrors["email"] {
-                                      Text(error).foregroundColor(.red).font(.caption)
-                                  }
+                    TextField("Correo Electrónico", text: $email)
+                        .autocapitalization(.none) // Deshabilitar autocapitalización
+                        .disableAutocorrection(true) // Deshabilitar autocorrección
+                        .keyboardType(.emailAddress) // Usar el teclado de tipo email
+                        .onChange(of: email) { newEmail in
+                            checkIfEmailExists(email: newEmail.lowercased())
+                        }
+                    if let error = formErrors["email"] {
+                        Text(error).foregroundColor(.red).font(.caption)
+                    }
+                    if emailAlreadyRegistered {
+                        Text("Este correo ya está registrado").foregroundColor(.red).font(.caption)
+                    }
 
-                                  HStack {
-                                      if showPassword {
-                                          TextField("Contraseña", text: $password)
-                                              .autocapitalization(.none)
-                                      } else {
-                                          SecureField("Contraseña", text: $password)
-                                      }
-                                      Button(action: {
-                                          self.showPassword.toggle()
-                                      }) {
-                                          Image(systemName: showPassword ? "eye.slash" : "eye")
-                                      }
-                                  }
-                                  if let error = formErrors["password"] {
-                                      Text(error).foregroundColor(.red).font(.caption)
-                                  }
+                    HStack {
+                        if showPassword {
+                            TextField("Contraseña", text: $password)
+                                .autocapitalization(.none)
+                        } else {
+                            SecureField("Contraseña", text: $password)
+                        }
+                        Button(action: {
+                            self.showPassword.toggle()
+                        }) {
+                            Image(systemName: showPassword ? "eye.slash" : "eye")
+                        }
+                    }
+                    if let error = formErrors["password"] {
+                        Text(error).foregroundColor(.red).font(.caption)
+                    }
 
-                                  HStack {
-                                      if showConfirmPassword {
-                                          TextField("Confirmar Contraseña", text: $confirmPassword)
-                                              .autocapitalization(.none)
-                                      } else {
-                                          SecureField("Confirmar Contraseña", text: $confirmPassword)
-                                      }
-                                      Button(action: {
-                                          self.showConfirmPassword.toggle()
-                                      }) {
-                                          Image(systemName: showConfirmPassword ? "eye.slash" : "eye")
-                                      }
-                                  }
-                                  if let error = formErrors["confirmPassword"] {
-                                      Text(error).foregroundColor(.red).font(.caption)
-                                  }
-                              }
+                    HStack {
+                        if showConfirmPassword {
+                            TextField("Confirmar Contraseña", text: $confirmPassword)
+                                .autocapitalization(.none)
+                        } else {
+                            SecureField("Confirmar Contraseña", text: $confirmPassword)
+                        }
+                        Button(action: {
+                            self.showConfirmPassword.toggle()
+                        }) {
+                            Image(systemName: showConfirmPassword ? "eye.slash" : "eye")
+                        }
+                    }
+                    if let error = formErrors["confirmPassword"] {
+                        Text(error).foregroundColor(.red).font(.caption)
+                    }
+                }
                             
                 Button("Crear Usuario") {
                     validateAndCreateUser()
@@ -112,8 +123,9 @@ struct RegistrationView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .foregroundColor(.white)
-                .background(allFieldsFilled ? Color.blue : Color.gray)
+                .background(allFieldsFilled && !emailAlreadyRegistered ? Color.blue : Color.gray)
                 .cornerRadius(8)
+                .disabled(emailAlreadyRegistered)
                 
                 VStack(alignment: .leading) {
                     Text("Al darle al botón crear usuario aceptas nuestros ")
@@ -158,7 +170,6 @@ struct RegistrationView: View {
                    }
                }
 
-
     // Comprueba si todos los campos están llenos y correctos
     private var allFieldsFilled: Bool {
         !name.isEmpty &&
@@ -189,8 +200,8 @@ struct RegistrationView: View {
             formErrors["birthDate"] = "La fecha de nacimiento es obligatoria."
         }
 
-        if formErrors.isEmpty && allFieldsFilled {
-            Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
+        if formErrors.isEmpty && allFieldsFilled && !emailAlreadyRegistered {
+            Auth.auth().createUser(withEmail: email.lowercased(), password: password) { authResult, error in // Asegurarse de que el correo electrónico se guarda en minúsculas
                 if let user = authResult?.user, error == nil {
                     saveUserData(user)
                 } else {
@@ -203,7 +214,7 @@ struct RegistrationView: View {
             showAlert = true
         }
     }
-    
+
     private func validateField(_ field: String, value: String, errorMessage: String, validation: ((String) -> Bool)? = nil) {
         if value.isEmpty {
             formErrors[field] = errorMessage
@@ -221,11 +232,12 @@ struct RegistrationView: View {
             }
         }
     }
+
     // Guarda los datos del usuario en la base de datos
     private func saveUserData(_ user: User) {
         let db = Firestore.firestore()
         let userData = [
-            "email": email,
+            "email": email.lowercased(), // Asegurarse de que el correo electrónico se guarda en minúsculas
             "firstName": name,
             "lastName": lastName,
             "birthDate": "\(birthDate!)", // Formato ISO 8601
@@ -239,10 +251,10 @@ struct RegistrationView: View {
                 alertMessage = "Registro exitoso. Por favor inicia sesión con tus nuevas credenciales."
                 showAlert = true
                 shouldNavigateToLogin = true
-                
+
                 // Guardar el correo electrónico y la contraseña en el llavero seguro
-                            KeychainService.saveEmail(email)
-                            KeychainService.savePassword(password)
+                KeychainService.saveEmail(email)
+                KeychainService.savePassword(password)
             }
         }
     }
@@ -270,8 +282,21 @@ struct RegistrationView: View {
         let passwordPredicate = NSPredicate(format: "SELF MATCHES %@", passwordFormat)
         return passwordPredicate.evaluate(with: password)
     }
-}
 
+    // Verifica si el correo electrónico ya está registrado en Firestore
+    private func checkIfEmailExists(email: String) {
+        let db = Firestore.firestore()
+        db.collection("users").whereField("email", isEqualTo: email).getDocuments { (snapshot, error) in
+            if let error = error {
+                print("Error al verificar el correo: \(error.localizedDescription)")
+            } else if snapshot?.documents.isEmpty == false {
+                emailAlreadyRegistered = true
+            } else {
+                emailAlreadyRegistered = false
+            }
+        }
+    }
+}
 
 struct RegistrationView_Previews: PreviewProvider {
     static var previews: some View {

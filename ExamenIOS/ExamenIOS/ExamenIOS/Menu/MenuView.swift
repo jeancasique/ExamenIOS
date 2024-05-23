@@ -9,50 +9,61 @@ struct MenuView: View {
     @State private var showSettings = false
     @State private var showHome = false
     @State private var isLoggedOut = false
-    
+
+    @State private var currentView: CurrentView = .home
+
     @EnvironmentObject var session: SessionStore
-    
+
     var body: some View {
         ZStack(alignment: .leading) {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .center) {
                     profileImageSection
-                    
+
                     Text(session.userData.firstName.isEmpty ? "Hola, usuario!" : "Hola \(session.userData.firstName)")
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                         .lineLimit(1)
-                    
+
                     Text("UX/UI Designer")
                         .foregroundColor(.gray)
                 }
                 .padding(.top, 30)
                 .padding(.horizontal, 50)
                 .padding(.bottom, 10)
-                
+
                 Divider()
-                
+
                 Group {
                     MenuItem(icon: "house.fill", text: "Home") {
-                        self.showHome = true
+                        if currentView != .home {
+                            self.showHome = true
+                            self.currentView = .home
+                        }
                     }
                     MenuItem(icon: "person.fill", text: "Perfil") {
                         self.showProfile = true
                     }
                     MenuItem(icon: "bookmark.fill", text: "Favoritos") {
-                        self.showFavorites = true
+                        if currentView != .favorites {
+                            self.showFavorites = true
+                            self.currentView = .favorites
+                        }
                     }
                     MenuItem(icon: "gearshape.fill", text: "Ajustes") {
-                        self.showSettings = true
+                        if currentView != .settings {
+                            self.showSettings = true
+                            self.currentView = .settings
+                        }
                     }
                 }
                 .padding(.horizontal)
-                
+
                 Spacer()
-                
+
                 Divider()
-                
+
                 MenuItem(icon: "arrowshape.turn.up.left.fill", text: "Logout") {
                     logout()
                 }
@@ -68,6 +79,9 @@ struct MenuView: View {
                 MoviesView()
                     .environmentObject(session)
                     .navigationBarBackButtonHidden(false)
+                    .onDisappear {
+                        self.showHome = false
+                    }
             }
         }
         .fullScreenCover(isPresented: $showProfile) {
@@ -75,6 +89,9 @@ struct MenuView: View {
                 PerfilView()
                     .environmentObject(session)
                     .navigationBarBackButtonHidden(false)
+                    .onDisappear {
+                        self.showProfile = false
+                    }
             }
         }
         .fullScreenCover(isPresented: $showFavorites) {
@@ -82,6 +99,9 @@ struct MenuView: View {
                 FavoritesMovies()
                     .environmentObject(session)
                     .navigationBarBackButtonHidden(false)
+                    .onDisappear {
+                        self.showFavorites = false
+                    }
             }
         }
         .fullScreenCover(isPresented: $showSettings) {
@@ -89,6 +109,9 @@ struct MenuView: View {
                 Ajustes()
                     .environmentObject(session)
                     .navigationBarBackButtonHidden(false)
+                    .onDisappear {
+                        self.showSettings = false
+                    }
             }
         }
         .fullScreenCover(isPresented: $isLoggedOut) {
@@ -103,7 +126,7 @@ struct MenuView: View {
                 .fill(Color.white.opacity(0.9))
                 .frame(width: 140, height: 140)
                 .shadow(radius: 10)
-            
+
             if let profileImage = session.userData.profileImage {
                 Image(uiImage: profileImage)
                     .resizable()
@@ -137,6 +160,13 @@ struct MenuView: View {
         session.signOut()
         self.isLoggedOut = true
     }
+}
+
+enum CurrentView {
+    case home
+    case profile
+    case favorites
+    case settings
 }
 
 struct MenuItem: View {

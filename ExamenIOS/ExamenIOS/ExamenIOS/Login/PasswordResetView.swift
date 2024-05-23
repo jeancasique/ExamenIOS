@@ -96,8 +96,10 @@ struct PasswordResetView: View {
 
     private func checkIfEmailExistsAndResetPassword() {
         if isEmailValid {
+            let lowercasedEmail = email.lowercased() // Convertir el correo electrónico a minúsculas
+            print("Lowercased email: \(lowercasedEmail)") // Depuración
             let db = Firestore.firestore()
-            db.collection("users").whereField("email", isEqualTo: email).getDocuments { (snapshot, error) in
+            db.collection("users").whereField("email", isEqualTo: lowercasedEmail).getDocuments { (snapshot, error) in
                 if let error = error {
                     alertMessage = "Error al verificar el correo: \(error.localizedDescription)"
                     showAlert = true
@@ -108,7 +110,7 @@ struct PasswordResetView: View {
                     shouldNavigateToLogin = false
                 } else {
                     // El correo electrónico está registrado, proceder con el restablecimiento de la contraseña
-                    resetPassword()
+                    resetPassword(lowercasedEmail)
                 }
             }
         } else {
@@ -118,7 +120,8 @@ struct PasswordResetView: View {
         }
     }
 
-    private func resetPassword() {
+
+    private func resetPassword(_ email: String) {
         Auth.auth().sendPasswordReset(withEmail: email) { error in
             if let error = error {
                 alertMessage = "Error al enviar el correo electrónico de restablecimiento de contraseña: \(error.localizedDescription)"
@@ -126,7 +129,7 @@ struct PasswordResetView: View {
                 shouldNavigateToLogin = false // No navegar a LoginView en caso de error
             } else {
                 alertMessage = "Se ha enviado un correo electrónico de restablecimiento de contraseña a \(email). Por favor, verifica tu bandeja de entrada."
-                email = ""
+                self.email = ""
                 showAlert = true
                 shouldNavigateToLogin = true // Navegar a LoginView en caso de éxito
             }

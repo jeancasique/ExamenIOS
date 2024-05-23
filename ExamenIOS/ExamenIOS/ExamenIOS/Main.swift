@@ -54,6 +54,7 @@ struct MyApp: App {
                         let isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark
                         if isDarkModeEnabled != userInterfaceMode.isDarkModeEnabled {
                             userInterfaceMode.isDarkModeEnabled = isDarkModeEnabled
+                           
                         }
                     }
                     sessionStore.listen()
