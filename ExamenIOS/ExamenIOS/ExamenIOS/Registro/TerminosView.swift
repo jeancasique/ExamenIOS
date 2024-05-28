@@ -8,7 +8,7 @@ struct TerminosView: View {
                     .font(.title)
                     .fontWeight(.bold)
                 
-                Text("Bienvenido a la Fundación ELE.")
+                Text("Bienvenido a mi app.")
                 
                 Text("Al utilizar nuestros servicios, aceptas estas condiciones. Te recomendamos que las leas detenidamente.")
                 

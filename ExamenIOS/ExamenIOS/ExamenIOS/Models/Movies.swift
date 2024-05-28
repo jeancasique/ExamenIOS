@@ -1,8 +1,8 @@
 import Foundation
 import SwiftUI
 
-
-struct Movie: Decodable {
+struct Movie: Decodable, Identifiable, Equatable {
+    let id = UUID() // Necesario para Identifiable
     let title: String
     let year: String
     let rated: String?
@@ -42,4 +42,8 @@ struct Movie: Decodable {
              boxOffice = "BoxOffice", production = "Production", website = "Website"
     }
 
+    static func ==(lhs: Movie, rhs: Movie) -> Bool {
+        return lhs.imdbID == rhs.imdbID
+    }
 }
+

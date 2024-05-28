@@ -5,14 +5,10 @@ import FirebaseAuth
 class DataManager {
     
     static let shared = DataManager() // Crea una instancia estática compartida de DataManager
-    private let favoritesKey = "favorites" // Define una clave para las películas favoritas
     private let profileImageURLKey = "profileImageURL" // Define una clave para la URL de la imagen de perfil
 
-    // Gestión de UserDefaults
-    
     // Función para añadir una película a favoritos
     func addFavorite(movieId: String, movieTitle: String) {
-        
         guard let userId = Auth.auth().currentUser?.uid else { return } // Verifica que hay un usuario autenticado
         let db = Firestore.firestore() // Obtiene una referencia a la base de datos de Firestore
         let favoriteData: [String: Any] = [ // Crea un diccionario con los datos de la película favorita
@@ -26,14 +22,13 @@ class DataManager {
                 print("Error adding favorite movie to Firestore: \(error)") // Imprime el error en la consola
             } else {
                 print("Favorite movie added to Firestore") // Imprime un mensaje de éxito
-                // Programar notificación después de agregar a Firestore
                 NotificationManager.shared.scheduleLocalNotification(movieTitle: movieTitle) // Programa una notificación local
             }
         }
     }
+
     // Función para eliminar una película de favoritos
     func removeFavorite(movieId: String) {
-        
         guard let userId = Auth.auth().currentUser?.uid else { return } // Verifica que hay un usuario autenticado
         let db = Firestore.firestore() // Obtiene una referencia a la base de datos de Firestore
         let query = db.collection("FavoriteMovie").whereField("movieId", isEqualTo: movieId).whereField("userId", isEqualTo: userId) // Crea una consulta para encontrar la película favorita del usuario
@@ -53,9 +48,9 @@ class DataManager {
             }
         }
     }
+
     // Función para comprobar si una película es favorita
     func isFavorite(movieId: String, completion: @escaping (Bool) -> Void) {
-        
         guard let userId = Auth.auth().currentUser?.uid else { // Verifica que hay un usuario autenticado
             completion(false) // Llama al completador con 'false' si no hay usuario
             return
@@ -72,16 +67,13 @@ class DataManager {
         }
     }
 
-    // Gestión de caché para la URL de la imagen de perfil
-    
     // Función para guardar la URL de la imagen de perfil en la caché
     func cacheProfileImageURL(_ url: String) {
-        
         UserDefaults.standard.set(url, forKey: profileImageURLKey) // Guarda la URL en UserDefaults
     }
+
     // Función para obtener la URL de la imagen de perfil de la caché
     func getCachedProfileImageURL() -> String? {
-        
         return UserDefaults.standard.string(forKey: profileImageURLKey) // Devuelve la URL guardada en UserDefaults
     }
 }

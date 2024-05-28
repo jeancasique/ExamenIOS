@@ -10,8 +10,6 @@ struct MenuView: View {
     @State private var showHome = false
     @State private var isLoggedOut = false
 
-    @State private var currentView: CurrentView = .home
-
     @EnvironmentObject var session: SessionStore
 
     var body: some View {
@@ -37,24 +35,30 @@ struct MenuView: View {
 
                 Group {
                     MenuItem(icon: "house.fill", text: "Home") {
-                        if currentView != .home {
+                        if session.currentView != .home {
+                            session.currentView = .home
                             self.showHome = true
-                            self.currentView = .home
+                        } else {
+                            self.isOpen = false // Ocultar el menú si ya estamos en Home
                         }
                     }
                     MenuItem(icon: "person.fill", text: "Perfil") {
                         self.showProfile = true
                     }
                     MenuItem(icon: "bookmark.fill", text: "Favoritos") {
-                        if currentView != .favorites {
+                        if session.currentView != .favorites {
+                            session.currentView = .favorites
                             self.showFavorites = true
-                            self.currentView = .favorites
+                        } else {
+                            self.isOpen = false // Ocultar el menú si ya estamos en Favoritos
                         }
                     }
                     MenuItem(icon: "gearshape.fill", text: "Ajustes") {
-                        if currentView != .settings {
+                        if session.currentView != .settings {
+                            session.currentView = .settings
                             self.showSettings = true
-                            self.currentView = .settings
+                        } else {
+                            self.isOpen = false // Ocultar el menú si ya estamos en Ajustes
                         }
                     }
                 }
@@ -118,6 +122,11 @@ struct MenuView: View {
             RootView()
                 .environmentObject(session)
         }
+        .onTapGesture {
+            if isOpen {
+                isOpen.toggle()
+            }
+        }
     }
 
     var profileImageSection: some View {
@@ -160,13 +169,6 @@ struct MenuView: View {
         session.signOut()
         self.isLoggedOut = true
     }
-}
-
-enum CurrentView {
-    case home
-    case profile
-    case favorites
-    case settings
 }
 
 struct MenuItem: View {

@@ -1,5 +1,4 @@
 import Foundation
-import SwiftUI
 import Combine
 
 // Clase para interactuar con el API de OMDB y obtener datos de películas
@@ -8,6 +7,9 @@ class MovieService: ObservableObject {
     private let apiKey = "fde4bf0f"
     // URL base del API de OMDB
     private let baseURL = URL(string: "https://www.omdbapi.com/")!
+    
+    // Películas observadas
+    @Published var movies: [Movie] = []
     
     // Método para buscar películas
     func fetchMovies(searchTerm: String, completion: @escaping ([Movie]?) -> Void) {
@@ -41,7 +43,9 @@ class MovieService: ObservableObject {
                 let decoder = JSONDecoder()
                 let movieResponse = try decoder.decode(MovieResponse.self, from: data)
                 // Llamar al completion handler con los resultados de la búsqueda
-                completion(movieResponse.Search)
+                DispatchQueue.main.async {
+                    completion(movieResponse.Search)
+                }
             } catch {
                 // Manejar errores de decodificación
                 print("Error decoding movie data: \(error)")
@@ -53,7 +57,7 @@ class MovieService: ObservableObject {
         task.resume()
     }
     
-    // Nuevo método para obtener detalles de una película específica
+    // Método para obtener detalles de una película específica
     func fetchMovieDetails(imdbID: String, completion: @escaping (Movie?) -> Void) {
         // Crear los parámetros de la URL con el ID de IMDB de la película y la clave de API
         let queryItems = [
@@ -85,7 +89,9 @@ class MovieService: ObservableObject {
                 let decoder = JSONDecoder()
                 let movieDetails = try decoder.decode(Movie.self, from: data)
                 // Llamar al completion handler con los detalles de la película
-                completion(movieDetails)
+                DispatchQueue.main.async {
+                    completion(movieDetails)
+                }
             } catch {
                 // Manejar errores de decodificación
                 print("Error decoding movie details: \(error)")

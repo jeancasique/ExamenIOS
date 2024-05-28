@@ -40,7 +40,7 @@ struct MoviesView: View {
                                 isMenuOpen.toggle() // Abrir/cerrar el menú
                             }
                         }) {
-                            ProfileIcon(userData: session.userData ?? UserData()) // Icono de perfil del usuario
+                            ProfileIcon(userData: session.userData ?? UserData(), subText: "Encuentra tu película") // Icono de perfil del usuario
                         }
                     }
                 }
@@ -96,6 +96,7 @@ struct MoviesView: View {
 // Vista para mostrar el icono de perfil del usuario
 struct ProfileIcon: View {
     @ObservedObject var userData: UserData // Datos del usuario
+    var subText: String // Texto secundario personalizado
     
     var body: some View {
         HStack(spacing: 8) {
@@ -118,7 +119,7 @@ struct ProfileIcon: View {
                     .foregroundColor(.white)
                     .font(.system(size: 18))
 
-                Text("Encuentra tu película")
+                Text(subText)
                     .font(.subheadline)
                     .foregroundStyle(.gray)
                     .italic(true)
@@ -174,7 +175,7 @@ struct MovieCard: View {
                     .frame(width: 160, alignment: .leading)
                     .foregroundColor(.white)
                 
-                Text(movie.year ?? "2004")
+                Text(movie.year)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                     .frame(width: 160, alignment: .leading)

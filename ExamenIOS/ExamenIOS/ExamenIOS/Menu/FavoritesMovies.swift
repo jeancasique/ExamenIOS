@@ -5,8 +5,7 @@ import FirebaseFirestore
 struct FavoritesMovies: View {
     @State private var searchText = "" // Estado para el texto de búsqueda
     @State private var favoriteMovies: [Movie] = [] // Estado para almacenar las películas favoritas
-    @StateObject private var movieService = MovieService() // Servicio para obtener películas
-    @StateObject private var userData = UserData() // Datos del usuario
+    @ObservedObject private var movieService = MovieService() // Servicio para obtener películas
     @State private var isMenuOpen = false // Estado para controlar el menú
     @EnvironmentObject var session: SessionStore
 
@@ -37,7 +36,7 @@ struct FavoritesMovies: View {
                                 isMenuOpen.toggle() // Abrir/cerrar el menú
                             }
                         }) {
-                            ProfileIcon(userData: userData) // Icono de perfil del usuario
+                            ProfileIcon(userData: session.userData, subText: "Encuentra tu película favorita") // Icono de perfil del usuario
                         }
                     }
                 }
@@ -81,7 +80,6 @@ struct FavoritesMovies: View {
 
     // Función para obtener detalles de las películas por sus IDs
     private func fetchMoviesDetails(movieIds: [String]) {
-        // Use a group to update the state once
         let dispatchGroup = DispatchGroup()
         var fetchedMovies: [Movie] = []
         
@@ -96,7 +94,7 @@ struct FavoritesMovies: View {
         }
         
         dispatchGroup.notify(queue: .main) {
-            self.favoriteMovies = fetchedMovies // Update state once
+            self.favoriteMovies = fetchedMovies // Actualizar estado una vez
         }
     }
 
@@ -117,7 +115,7 @@ struct FavoritesMovies: View {
             if let document = document, document.exists {
                 let data = document.data()
                 DispatchQueue.main.async {
-                    self.userData.firstName = data?["firstName"] as? String ?? "" // Actualizar nombre del usuario
+                    self.session.userData.firstName = data?["firstName"] as? String ?? "" // Actualizar nombre del usuario
                     if let urlString = data?["profileImageURL"] as? String {
                         self.loadProfileImage(from: urlString) // Cargar imagen de perfil
                     }
@@ -132,7 +130,7 @@ struct FavoritesMovies: View {
         URLSession.shared.dataTask(with: url) { data, _, error in
             guard let data = data, error == nil else { return }
             DispatchQueue.main.async {
-                self.userData.profileImage = UIImage(data: data) // Actualizar la imagen de perfil
+                self.session.userData.profileImage = UIImage(data: data) // Actualizar la imagen de perfil
             }
         }.resume()
     }
