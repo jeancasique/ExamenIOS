@@ -45,6 +45,7 @@ struct FavoritesMovies: View {
                     loadFavoriteMovies() // Cargar películas favoritas al aparecer la vista
                 }
                 .navigationBarBackButtonHidden(true) // Ocultar botón de retroceso
+                .hideKeyboardWhenTappedAround()
             }
             .navigationViewStyle(StackNavigationViewStyle()) // Asegurar el estilo de navegación para ocultar el botón de retroceso
             

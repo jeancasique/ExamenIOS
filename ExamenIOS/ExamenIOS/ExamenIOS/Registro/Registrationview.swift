@@ -72,6 +72,7 @@ struct RegistrationView: View {
                         .autocapitalization(.none) // Deshabilitar autocapitalización
                         .disableAutocorrection(true) // Deshabilitar autocorrección
                         .keyboardType(.emailAddress) // Usar el teclado de tipo email
+                    
                         .onChange(of: email) { newEmail in
                             checkIfEmailExists(email: newEmail.lowercased())
                         }
@@ -167,6 +168,7 @@ struct RegistrationView: View {
                        .background(
                            NavigationLink(destination: LoginView(), isActive: $shouldNavigateToLogin) { EmptyView() }
                        )
+                       .hideKeyboardWhenTappedAround() 
                    }
                }
 

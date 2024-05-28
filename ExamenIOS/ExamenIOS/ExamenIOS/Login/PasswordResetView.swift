@@ -92,6 +92,7 @@ struct PasswordResetView: View {
         .background(
             NavigationLink("", destination: LoginView(), isActive: $shouldNavigateToLogin) // NavigationLink oculto
         )
+        .hideKeyboardWhenTappedAround() // Asegúrate de aplicar este modificador al contenedor más externo
     }
 
     private func checkIfEmailExistsAndResetPassword() {
@@ -119,7 +120,6 @@ struct PasswordResetView: View {
             shouldNavigateToLogin = false // No navegar a LoginView si el correo no es válido
         }
     }
-
 
     private func resetPassword(_ email: String) {
         Auth.auth().sendPasswordReset(withEmail: email) { error in

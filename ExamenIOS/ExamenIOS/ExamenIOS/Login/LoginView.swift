@@ -43,6 +43,7 @@ struct LoginView: View {
                         .navigationBarBackButtonHidden(true)
                 }
             }
+            .hideKeyboardWhenTappedAround()
         }
     }
     

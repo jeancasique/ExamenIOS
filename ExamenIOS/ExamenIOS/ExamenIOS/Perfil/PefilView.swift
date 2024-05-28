@@ -102,6 +102,7 @@ struct PerfilView: View {
                 }
             })
         }
+        .hideKeyboardWhenTappedAround()
         .navigationBarBackButtonHidden(true)
     }
     

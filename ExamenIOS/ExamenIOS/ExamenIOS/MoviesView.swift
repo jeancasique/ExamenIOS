@@ -59,8 +59,10 @@ struct MoviesView: View {
                         EmptyView()
                     }
                 )
+                .hideKeyboardWhenTappedAround()
             }
             .navigationViewStyle(StackNavigationViewStyle()) // Asegurar el estilo de navegación para ocultar el botón de retroceso
+           
 
             if isMenuOpen {
                 Color.black.opacity(0.3)

@@ -59,6 +59,7 @@ struct MyApp: App {
                     }
                     sessionStore.listen()
                 }
+              
         }
     }
 }
@@ -74,6 +75,7 @@ struct RootView: View {
                 LoginView()
             }
         }
+     
     }
 }
 

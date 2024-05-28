@@ -10,7 +10,7 @@ struct FacebookLoginButton: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let container = UIView()
 
-        // Create custom button view with logo
+      
         let customButton = UIButton(type: .custom)
         customButton.setImage(UIImage(named: "logoFacebook"), for: .normal)
         customButton.tintColor = .blue
@@ -22,7 +22,7 @@ struct FacebookLoginButton: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        // No se necesita implementar esta función para nuestro propósito actual
+        
     }
 
     func makeCoordinator() -> Coordinator {
