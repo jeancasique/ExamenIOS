@@ -5,7 +5,6 @@ import FirebaseFirestore
 import FirebaseStorage
 
 struct RegistrationView: View {
-    // Estado para los campos del formulario de registro
     @State private var name = ""
     @State private var lastName = ""
     @State private var email = ""
@@ -16,20 +15,15 @@ struct RegistrationView: View {
     @State private var showPassword = false
     @State private var showConfirmPassword = false
     @State private var formErrors = [String: String]()  // Almacenar mensajes de error para cada campo
-
-    // Estado para alertas y navegación
     @State private var alertMessage = ""
     @State private var showAlert = false
     @State private var shouldNavigateToLogin = false
     @State private var showTermsSheet = false
-
-    // Estado para verificar si el correo ya está registrado
     @State private var emailAlreadyRegistered = false
 
     var body: some View {
         NavigationStack {
             Form {
-                // Sección de información personal
                 Section(header: Text("Información Personal")) {
                     TextField("Nombre", text: $name)
                     if let error = formErrors["name"] {
@@ -41,14 +35,10 @@ struct RegistrationView: View {
                         Text(error).foregroundColor(.red).font(.caption)
                     }
 
-                    DatePicker(
-                        "Fecha de Nacimiento",
-                        selection: Binding(
-                            get: { self.birthDate ?? Date() },
-                            set: { self.birthDate = $0 }
-                        ),
-                        displayedComponents: .date
-                    ).onChange(of: birthDate) { newDate in
+                    DatePicker("Fecha de Nacimiento", selection: Binding(
+                        get: { self.birthDate ?? Date() },
+                        set: { self.birthDate = $0 }
+                    ), displayedComponents: .date).onChange(of: birthDate) { newDate in
                         if let newDate = newDate {
                             checkAge(date: newDate)
                         }
@@ -66,13 +56,11 @@ struct RegistrationView: View {
                     }
                 }
 
-                // Sección para las credenciales de acceso
                 Section(header: Text("Credenciales de Acceso")) {
                     TextField("Correo Electrónico", text: $email)
-                        .autocapitalization(.none) // Deshabilitar autocapitalización
-                        .disableAutocorrection(true) // Deshabilitar autocorrección
-                        .keyboardType(.emailAddress) // Usar el teclado de tipo email
-                    
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                        .keyboardType(.emailAddress)
                         .onChange(of: email) { newEmail in
                             checkIfEmailExists(email: newEmail.lowercased())
                         }
@@ -117,21 +105,42 @@ struct RegistrationView: View {
                         Text(error).foregroundColor(.red).font(.caption)
                     }
                 }
-                            
-                Button("Crear Usuario") {
+                
+            }
+            .navigationTitle("Registro")
+            .alert(isPresented: $showAlert) {
+                Alert(
+                    title: Text("Registro"),
+                    message: Text(alertMessage),
+                    dismissButton: .default(Text("OK"), action: {
+                        if shouldNavigateToLogin {
+                            self.shouldNavigateToLogin = true
+                        }
+                    })
+                )
+            }
+            .background(
+                NavigationLink(destination: LoginView(session: SessionStore()), isActive: $shouldNavigateToLogin) { EmptyView() }
+            )
+            .hideKeyboardWhenTappedAround()
+            
+            VStack {
+                Button(action: {
                     validateAndCreateUser()
+                }) {
+                    Text("Crear Usuario")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .foregroundColor(.white)
+                        .background(allFieldsFilled && !emailAlreadyRegistered ? Color.blue : Color.gray)
+                        .cornerRadius(8)
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .foregroundColor(.white)
-                .background(allFieldsFilled && !emailAlreadyRegistered ? Color.blue : Color.gray)
-                .cornerRadius(8)
                 .disabled(emailAlreadyRegistered)
                 
                 VStack(alignment: .leading) {
                     Text("Al darle al botón crear usuario aceptas nuestros ")
                         .foregroundColor(.primary)
-                        .font(.system(size: 11)) // Cambia el tamaño de la fuente aquí
+                        .font(.system(size: 11))
                         .lineLimit(1)
 
                     HStack {
@@ -139,40 +148,24 @@ struct RegistrationView: View {
                             showTermsSheet.toggle()
                         }
                         .foregroundColor(.blue)
-                        .font(.system(size: 12)) // Cambia el tamaño de la fuente para el botón
+                        .font(.system(size: 12))
                         .lineLimit(1)
                         .sheet(isPresented: $showTermsSheet) {
                             TerminosView()
                         }
-                        
+
                         Text("y nuestra política de privacidad.")
                             .foregroundColor(.primary)
-                            .font(.system(size: 11)) // Cambia el tamaño de la fuente aquí también
+                            .font(.system(size: 11))
                             .lineLimit(1)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                }
-            .navigationTitle("Registro")
-                       .alert(isPresented: $showAlert) {
-                           Alert(
-                               title: Text("Registro"),
-                               message: Text(alertMessage),
-                               dismissButton: .default(Text("OK"), action: {
-                                   if shouldNavigateToLogin {
-                                       self.shouldNavigateToLogin = true
-                                   }
-                               })
-                           )
-                       }
-                       .background(
-                           NavigationLink(destination: LoginView(), isActive: $shouldNavigateToLogin) { EmptyView() }
-                       )
-                       .hideKeyboardWhenTappedAround() 
-                   }
-               }
+            }
+            .padding()
+        }
+    }
 
-    // Comprueba si todos los campos están llenos y correctos
     private var allFieldsFilled: Bool {
         !name.isEmpty &&
         !lastName.isEmpty &&
@@ -183,7 +176,6 @@ struct RegistrationView: View {
         birthDate != nil
     }
 
-    // Valida y crea el usuario
     private func validateAndCreateUser() {
         formErrors.removeAll()
 
@@ -197,14 +189,15 @@ struct RegistrationView: View {
         }
 
         if let date = birthDate {
-            checkAge(date: date)  // Asegúrate de pasar la fecha actual a la función
+            checkAge(date: date)
         } else {
             formErrors["birthDate"] = "La fecha de nacimiento es obligatoria."
         }
 
         if formErrors.isEmpty && allFieldsFilled && !emailAlreadyRegistered {
-            Auth.auth().createUser(withEmail: email.lowercased(), password: password) { authResult, error in // Asegurarse de que el correo electrónico se guarda en minúsculas
-                if let user = authResult?.user, error == nil {
+            Auth.auth().createUser(withEmail: email.lowercased(), password: password) { authResult, error in
+                if let firebaseUser = authResult?.user, error == nil {
+                    let user = User(uid: firebaseUser.uid, email: firebaseUser.email ?? "", password: self.password)
                     saveUserData(user)
                 } else {
                     alertMessage = "Error al crear el usuario: \(error?.localizedDescription ?? "")"
@@ -221,9 +214,7 @@ struct RegistrationView: View {
         if value.isEmpty {
             formErrors[field] = errorMessage
         } else {
-            // Si se proporciona una función de validación, usarla para validar el campo
             if let validation = validation, !validation(value) {
-                // Personaliza el mensaje de error para la contraseña
                 if field == "password" && !isValidPassword(value) {
                     formErrors[field] = "La contraseña debe tener mínimo 5 caracteres, una mayúscula y un número."
                 } else {
@@ -235,14 +226,13 @@ struct RegistrationView: View {
         }
     }
 
-    // Guarda los datos del usuario en la base de datos
     private func saveUserData(_ user: User) {
         let db = Firestore.firestore()
         let userData = [
-            "email": email.lowercased(), // Asegurarse de que el correo electrónico se guarda en minúsculas
+            "email": user.email.lowercased(),
             "firstName": name,
             "lastName": lastName,
-            "birthDate": "\(birthDate!)", // Formato ISO 8601
+            "birthDate": "\(birthDate!)",
             "gender": gender
         ]
         db.collection("users").document(user.uid).setData(userData) { error in
@@ -254,9 +244,8 @@ struct RegistrationView: View {
                 showAlert = true
                 shouldNavigateToLogin = true
 
-                // Guardar el correo electrónico y la contraseña en el llavero seguro
-                KeychainService.saveEmail(email)
-                KeychainService.savePassword(password)
+                KeychainService.saveEmail(user.email)
+                KeychainService.savePassword(user.password)
             }
         }
     }

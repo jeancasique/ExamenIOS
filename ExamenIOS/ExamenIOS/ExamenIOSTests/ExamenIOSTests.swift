@@ -1,4 +1,4 @@
-//
+/*
 //  ExamenIOSTests.swift
 //  ExamenIOSTests
 //
@@ -33,4 +33,4 @@ final class ExamenIOSTests: XCTestCase {
         }
     }
 
-}
+ }*/

@@ -4,26 +4,50 @@ import FirebaseAuth
 import FacebookCore
 import FirebaseFirestore
 
+class FacebookLoginManager {
+    func performFacebookLogin(completion: @escaping (Bool) -> Void) {
+        let loginManager = LoginManager()
+        loginManager.logIn(permissions: ["public_profile", "email"], from: nil) { result, error in
+            if let error = error {
+                print("Error logging in with Facebook: \(error.localizedDescription)")
+                completion(false)
+                return
+            }
+            
+            guard let accessToken = AccessToken.current else {
+                print("Failed to get access token")
+                completion(false)
+                return
+            }
+
+            let credential = FacebookAuthProvider.credential(withAccessToken: accessToken.tokenString)
+            Auth.auth().signIn(with: credential) { authResult, error in
+                if let error = error {
+                    print("Facebook authentication failed: \(error.localizedDescription)")
+                    completion(false)
+                    return
+                }
+                completion(true)
+            }
+        }
+    }
+}
+
 struct FacebookLoginButton: UIViewRepresentable {
     @EnvironmentObject var session: SessionStore
 
     func makeUIView(context: Context) -> UIView {
         let container = UIView()
-
-      
         let customButton = UIButton(type: .custom)
         customButton.setImage(UIImage(named: "logoFacebook"), for: .normal)
         customButton.tintColor = .blue
         customButton.frame = CGRect(x: 0, y: 0, width: 60, height: 60)
         customButton.addTarget(context.coordinator, action: #selector(Coordinator.didTapCustomButton), for: .touchUpInside)
-
         container.addSubview(customButton)
         return container
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {
-        
-    }
+    func updateUIView(_ uiView: UIView, context: Context) { }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -92,7 +116,6 @@ struct FacebookLoginButton: UIViewRepresentable {
                 let picture = (result["picture"] as? [String: Any])?["data"] as? [String: Any]
                 let profileImageURL = picture?["url"] as? String ?? ""
 
-                // Separar el nombre completo en firstName y lastName
                 let nameComponents = fullName.split(separator: " ")
                 let firstName = nameComponents.first.map(String.init) ?? ""
                 let lastName = nameComponents.dropFirst().joined(separator: " ")
@@ -109,8 +132,8 @@ struct FacebookLoginButton: UIViewRepresentable {
             let db = Firestore.firestore()
             let userData: [String: Any] = [
                 "email": email,
-                "firstName": firstName, // Guardar el primer nombre
-                "lastName": lastName, // Guardar el apellido
+                "firstName": firstName,
+                "lastName": lastName,
                 "profileImageURL": profileImageURL
             ]
             db.collection("users").document(userId).setData(userData) { error in

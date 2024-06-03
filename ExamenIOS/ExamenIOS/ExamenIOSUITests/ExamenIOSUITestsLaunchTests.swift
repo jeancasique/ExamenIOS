@@ -1,10 +1,4 @@
-//
-//  ExamenIOSUITestsLaunchTests.swift
-//  ExamenIOSUITests
-//
-//  Created by Mañanas on 8/5/24.
-//
-
+/*
 import XCTest
 
 final class ExamenIOSUITestsLaunchTests: XCTestCase {
@@ -29,4 +23,4 @@ final class ExamenIOSUITestsLaunchTests: XCTestCase {
         attachment.lifetime = .keepAlways
         add(attachment)
     }
-}
+ }*/

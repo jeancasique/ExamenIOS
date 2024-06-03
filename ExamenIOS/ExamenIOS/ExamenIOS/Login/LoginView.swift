@@ -1,21 +1,19 @@
 import SwiftUI
-import FirebaseAuth
 import FacebookCore
 import FacebookLogin
+import FirebaseCore
+import FirebaseAuth
+import GoogleSignIn
+import FirebaseFirestore
+import AuthenticationServices
 
 struct LoginView: View {
-    @EnvironmentObject var session: SessionStore
-    @State private var email = ""
-    @State private var password = ""
-    @State private var emailError = ""
-    @State private var passwordError = ""
-    @State private var isUserLoggedIn = false
+    @StateObject private var viewModel: LoginViewModel
     @Environment(\.colorScheme) var colorScheme
-    @StateObject var userData = UserData()
-    
-    private let googleSignInManager = GoogleSignInManager()
-    private let appleSignInManager = AppleSignInManager()
-    private let faceIDManager = FaceIDManager()
+
+    init(session: SessionStore) {
+        _viewModel = StateObject(wrappedValue: LoginViewModel(session: session))
+    }
 
     var body: some View {
         NavigationStack {
@@ -36,24 +34,24 @@ struct LoginView: View {
                     }
                 }
                 .onAppear {
-                    session.listen()
+                    viewModel.session.listen()
                 }
-                .navigationDestination(isPresented: $session.isLoggedIn) {
-                    MoviesView().environmentObject(userData)
+                .navigationDestination(isPresented: $viewModel.isUserLoggedIn) {
+                    MoviesView()
+                        .environmentObject(viewModel.session.userData)
                         .navigationBarBackButtonHidden(true)
                 }
             }
-            .hideKeyboardWhenTappedAround()
         }
     }
-    
+
     private var emailField: some View {
         VStack(alignment: .leading) {
             HStack {
                 Image(systemName: "envelope.fill")
                     .foregroundColor(.gray)
                     .padding(.leading, 8)
-                TextField("Correo Electrónico", text: $email)
+                TextField("Correo Electrónico", text: $viewModel.email)
                     .padding(.vertical, 20)
                     .autocapitalization(.none)
                     .keyboardType(.emailAddress)
@@ -62,47 +60,47 @@ struct LoginView: View {
             .border(Color(UIColor.separator))
             .padding(.horizontal, 8)
             .padding(.vertical, 20)
-            .onChange(of: email, perform: validateEmail)
+            .onChange(of: viewModel.email, perform: viewModel.validateEmail)
             .submitLabel(.next)
             
-            if !emailError.isEmpty {
-                Text(emailError)
+            if !viewModel.emailError.isEmpty {
+                Text(viewModel.emailError)
                     .foregroundColor(.red)
                     .font(.caption)
                     .padding([.horizontal, .top], 4)
             }
         }
     }
-    
+
     private var passwordField: some View {
         VStack(alignment: .leading) {
             HStack {
                 Image(systemName: "key.fill")
                     .foregroundColor(.gray)
                     .padding(.leading, 8)
-                SecureField("Contraseña", text: $password)
+                SecureField("Contraseña", text: $viewModel.password)
                     .padding(.vertical, 20)
             }
             .border(Color(UIColor.separator))
             .padding(.horizontal, 8)
             .padding(.vertical, 20)
-            .onChange(of: password, perform: validatePassword)
+            .onChange(of: viewModel.password, perform: viewModel.validatePassword)
             .submitLabel(.done)
             
-            if !passwordError.isEmpty {
-                Text(passwordError)
+            if !viewModel.passwordError.isEmpty {
+                Text(viewModel.passwordError)
                     .foregroundColor(.red)
                     .font(.caption)
                     .padding([.horizontal, .top], 4)
             }
         }
     }
-    
+
     private var actionButtons: some View {
         VStack {
             HStack(spacing: 60) {
                 Button("Iniciar Sesión") {
-                    validateFields()
+                    viewModel.validateFields()
                 }
                 .padding()
                 .foregroundColor(.white)
@@ -123,11 +121,11 @@ struct LoginView: View {
             }
             
             Button(action: {
-                faceIDManager.authenticateWithBiometrics { success, email, password in
+                viewModel.authenticateWithFaceID { success, email, password in
                     if success {
-                        self.email = email ?? ""
-                        self.password = password ?? ""
-                        self.validateFields()
+                        viewModel.email = email ?? ""
+                        viewModel.password = password ?? ""
+                        viewModel.validateFields()
                     }
                 }
             }) {
@@ -140,9 +138,9 @@ struct LoginView: View {
             
             HStack(spacing: 20) {
                 Button(action: {
-                    googleSignInManager.performGoogleSignIn { success in
+                    viewModel.performGoogleSignIn { success in
                         if success {
-                            session.isLoggedIn = true
+                            viewModel.session.isLoggedIn = true
                         }
                     }
                 }) {
@@ -157,11 +155,11 @@ struct LoginView: View {
                 }
                 
                 Button(action: {
-                    appleSignInManager.performAppleSignIn { fullName, email in
+                    viewModel.performAppleSignIn { fullName, email in
                         if let fullName = fullName, let email = email {
-                            let (firstName, lastName) = splitFullName(fullName)
-                            appleSignInManager.saveCredentialsToFirestore(firstName: firstName, lastName: lastName, email: email)
-                            session.isLoggedIn = true
+                            let (firstName, lastName) = viewModel.splitFullName(fullName)
+                            viewModel.saveAppleCredentialsToFirestore(firstName: firstName, lastName: lastName, email: email)
+                            viewModel.session.isLoggedIn = true
                         }
                     }
                 }) {
@@ -179,76 +177,22 @@ struct LoginView: View {
                     .padding(8)
                     .background(colorScheme == .dark ? Color.black : Color.white)
                     .cornerRadius(8)
-                    .environmentObject(session) // Asegúrate de pasar session como un environmentObject
+                    .environmentObject(viewModel.session)
             }
             .padding(2)
         }
-    }
-    
-    private func validateFields() {
-        if emailError.isEmpty && passwordError.isEmpty {
-            Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
-                if let error = error {
-                    self.passwordError = "Error de autenticación: \(error.localizedDescription)"
-                } else {
-                    session.isLoggedIn = true
-                }
-            }
-        } else {
-            self.passwordError = "Por favor corrige los errores antes de continuar."
-        }
-    }
-    
-    private func validateEmail(_ email: String) {
-        if email.isEmpty {
-            self.emailError = "El correo electrónico es obligatorio."
-        } else if !isValidEmail(email) {
-            self.emailError = "Introduce un correo electrónico válido."
-        } else {
-            self.emailError = ""
-        }
-    }
-    
-    private func validatePassword(_ password: String) {
-        if password.isEmpty {
-            self.passwordError = "La contraseña es obligatoria."
-        } else if !isValidPassword(password) {
-            self.passwordError = "La contraseña debe tener al menos 5 caracteres, una mayúscula y un número."
-        } else {
-            self.passwordError = ""
-        }
-    }
-    
-    func isValidEmail(_ email: String) -> Bool {
-        let emailFormat = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
-        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailFormat)
-        return emailPredicate.evaluate(with: email)
-    }
-    
-    func isValidPassword(_ password: String) -> Bool {
-        let passwordFormat = "^(?=.*[A-Z])(?=.*\\d)[A-Za-z\\d]{5,}$"
-        let passwordPredicate = NSPredicate(format: "SELF MATCHES %@", passwordFormat)
-        return passwordPredicate.evaluate(with: password)
-    }
-    
-    private func splitFullName(_ fullName: String) -> (String, String) {
-        let components = fullName.components(separatedBy: " ")
-        let firstName = components.first ?? ""
-        let lastName = components.dropFirst().joined(separator: " ")
-        return (firstName, lastName)
     }
 }
 
 struct LoginView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            LoginView()
+            LoginView(session: SessionStore())
                 .preferredColorScheme(.dark)
                 .environmentObject(SessionStore())
-            LoginView()
+            LoginView(session: SessionStore())
                 .preferredColorScheme(.light)
                 .environmentObject(SessionStore())
-            
         }
     }
 }

@@ -1,6 +1,5 @@
 import SwiftUI
 import FirebaseCore
-import Firebase
 import UIKit
 import UserNotifications
 import FacebookCore
@@ -54,12 +53,10 @@ struct MyApp: App {
                         let isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark
                         if isDarkModeEnabled != userInterfaceMode.isDarkModeEnabled {
                             userInterfaceMode.isDarkModeEnabled = isDarkModeEnabled
-                           
                         }
                     }
                     sessionStore.listen()
                 }
-              
         }
     }
 }
@@ -72,10 +69,9 @@ struct RootView: View {
             if session.isLoggedIn {
                 MoviesView()
             } else {
-                LoginView()
+                LoginView(session: session)
             }
         }
-     
     }
 }
 

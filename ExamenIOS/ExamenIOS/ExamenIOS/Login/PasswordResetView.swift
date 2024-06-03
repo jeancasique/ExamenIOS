@@ -9,7 +9,8 @@ struct PasswordResetView: View {
     @State private var isEmailValid = true
     @Environment(\.colorScheme) var colorScheme
     @State private var shouldNavigateToLogin = false  // Estado para controlar la navegación
-
+    @StateObject private var session = SessionStore()
+    
     var body: some View {
         VStack {
             if colorScheme == .dark {
@@ -90,7 +91,7 @@ struct PasswordResetView: View {
             )
         }
         .background(
-            NavigationLink("", destination: LoginView(), isActive: $shouldNavigateToLogin) // NavigationLink oculto
+            NavigationLink("", destination: LoginView(session: session), isActive: $shouldNavigateToLogin) // NavigationLink oculto
         )
         .hideKeyboardWhenTappedAround() // Asegúrate de aplicar este modificador al contenedor más externo
     }

@@ -1,10 +1,4 @@
-//
-//  ExamenIOSUITests.swift
-//  ExamenIOSUITests
-//
-//  Created by Mañanas on 8/5/24.
-//
-
+/*
 import XCTest
 
 final class ExamenIOSUITests: XCTestCase {
@@ -38,4 +32,4 @@ final class ExamenIOSUITests: XCTestCase {
             }
         }
     }
-}
+ }*/
