@@ -81,10 +81,14 @@ struct DescriptionMovie: View {
         .navigationBarTitleDisplayMode(.inline)
         .edgesIgnoringSafeArea(.top)
         .onAppear {
-            DataManager.shared.isFavorite(movieId: movie.imdbID) { isFavorite in
-                DispatchQueue.main.async {
-                    self.isFavorite = isFavorite
-                }
+            loadFavoriteStatus()
+        }
+    }
+
+    private func loadFavoriteStatus() {
+        DataManager.shared.isFavorite(movieId: movie.imdbID) { isFavorite in
+            DispatchQueue.main.async {
+                self.isFavorite = isFavorite
             }
         }
     }

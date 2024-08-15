@@ -34,7 +34,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 }
 
 class UserInterfaceMode: ObservableObject {
-    @Published var isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark
+    @Published var isDarkModeEnabled = true // Modo oscuro por defecto
 }
 
 @main
@@ -42,21 +42,16 @@ struct MyApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject var userInterfaceMode = UserInterfaceMode()
     @StateObject var sessionStore = SessionStore()
+    @StateObject var perfilViewModel = PerfilViewModel(userData: UserData()) // Asegúrate de que este inicializador es válido
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(sessionStore)
                 .environmentObject(userInterfaceMode)
-                .preferredColorScheme(userInterfaceMode.isDarkModeEnabled ? .dark : .light)
+                .environmentObject(perfilViewModel) // Asegúrate de que estás usando .environmentObject correctamente
+                .preferredColorScheme(.dark) // Establece el modo oscuro por defecto
                 .onAppear {
-                    NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillChangeFrameNotification, object: nil, queue: .main) { _ in
-                        let isDarkModeEnabled = UIScreen.main.traitCollection.userInterfaceStyle == .dark
-                        if isDarkModeEnabled != userInterfaceMode.isDarkModeEnabled {
-                            userInterfaceMode.isDarkModeEnabled = isDarkModeEnabled
-                           
-                        }
-                    }
                     sessionStore.listen()
                 }
         }
